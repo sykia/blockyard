@@ -53,6 +53,8 @@ On Hyprland, Blockyard asks the compositor to float and center its main window a
 
 The app data directory is chosen by Tauri (`app.blockyard.launcher`). It contains `state.json`, `instances/<id>/game`, a shared `libraries` directory, `assets`, `cache`, and managed `runtimes`. The operating system keyring stores Microsoft refresh and Minecraft access tokens. Do not copy an instance's `game` directory while Minecraft is running.
 
+Choose **Dark**, **Light**, or **System** in **Settings → Theme**, then save the launcher settings. The selection is stored with other launcher preferences; System follows the operating system's light/dark preference, including changes while Blockyard is open. Selecting a theme previews it immediately, and leaving Settings without saving restores the saved theme.
+
 ## Account setup
 
 **Offline profiles:** Open Accounts → Add offline profile and choose a 3–16 character Minecraft player name. The launcher derives Minecraft's stable offline UUID from that name. Offline profiles need no Microsoft client ID and work for singleplayer and servers that permit offline players. They do not prove Minecraft ownership and cannot join online-mode servers. Changing the name creates a different UUID, so existing worlds may treat it as a different player.

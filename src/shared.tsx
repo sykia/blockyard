@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { Box, Sword, Pickaxe, Leaf, Flame } from "lucide-react";
+import type { Theme } from "./theme";
 export type Loader =
   { kind: "vanilla" } | { kind: "fabric" | "neoforge"; version: string };
 export type Instance = {
@@ -28,7 +29,7 @@ export type Settings = {
   javaPath: string | null;
   downloadConcurrency: number;
   showSnapshots: boolean;
-  theme: string;
+  theme: Theme;
   minimizeOnLaunch: boolean;
   width: number;
   height: number;

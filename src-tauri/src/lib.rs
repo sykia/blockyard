@@ -153,6 +153,7 @@ async fn save_settings(state: tauri::State<'_, State>, settings: Settings) -> Re
     if settings.download_concurrency == 0
         || settings.download_concurrency > 32
         || settings.ram_mb < 512
+        || !matches!(settings.theme.as_str(), "dark" | "light" | "system")
     {
         return Err("Invalid settings".into());
     }

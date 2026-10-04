@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Check, RefreshCw, Download } from "lucide-react";
 import { api, Settings } from "../shared";
 import { listen } from "@tauri-apps/api/event";
+import { applyTheme } from "../theme";
+import type { Theme } from "../theme";
 export function SettingsView({
   settings,
   onSave,
@@ -23,6 +25,8 @@ export function SettingsView({
   useEffect(() => {
     setS(settings);
   }, [settings]);
+  useEffect(() => applyTheme(s.theme), [s.theme]);
+  useEffect(() => () => applyTheme(settings.theme), [settings.theme]);
   useEffect(() => {
     api<boolean>("updater_ready")
       .then((available) => {
@@ -141,9 +145,11 @@ export function SettingsView({
             Theme
             <select
               value={s.theme}
-              onChange={(e) => setS({ ...s, theme: e.target.value })}
+              onChange={(e) => setS({ ...s, theme: e.target.value as Theme })}
             >
               <option value="dark">Dark</option>
+              <option value="light">Light</option>
+              <option value="system">System</option>
             </select>
           </label>
           <label>

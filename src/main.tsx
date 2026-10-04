@@ -30,6 +30,7 @@ import { AccountsView } from "./views/AccountsView";
 import { SettingsView } from "./views/SettingsView";
 import { LogsView } from "./views/LogsView";
 import "./style.css";
+import { applyTheme, normalizeTheme } from "./theme";
 
 function App() {
   const [db, setDb] = useState<Database | null>(null),
@@ -74,6 +75,16 @@ function App() {
         .then(setVersions)
         .catch((e) => setError(String(e)));
   }, [db?.settings.showSnapshots]);
+  useEffect(() => {
+    if (!db) return;
+    const theme = normalizeTheme(db.settings.theme);
+    applyTheme(theme);
+    try {
+      localStorage.setItem("blockyard-theme", theme);
+    } catch {
+      // The saved backend setting remains authoritative when storage is unavailable.
+    }
+  }, [db?.settings.theme]);
   const action = async (fn: () => Promise<unknown>) => {
     setError("");
     setBusy(true);
