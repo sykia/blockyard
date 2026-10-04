@@ -874,3 +874,77 @@ select option {
     grid-template-columns: 1fr;
   }
 }
+.catalog-key-notice {
+  margin: 14px 0;
+}
+.catalog-key-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.catalog-detail {
+  max-height: calc(100vh - 240px);
+  overflow: auto;
+  align-content: start;
+}
+.catalog-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.catalog-detail-head img {
+  width: 58px;
+  height: 58px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex: none;
+}
+.catalog-detail-head h3 {
+  margin: 0 0 5px;
+}
+.catalog-detail-head p {
+  margin: 0;
+}
+.catalog-description {
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+}
+.catalog-description h1,
+.catalog-description h2,
+.catalog-description h3 {
+  margin: 20px 0 8px;
+}
+.catalog-description p {
+  margin: 9px 0;
+}
+.catalog-description img,
+.catalog-gallery img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+.catalog-description pre {
+  overflow-x: auto;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+}
+.catalog-description table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+.catalog-description th,
+.catalog-description td {
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.catalog-description a {
+  color: #9bc8ff;
+}
+.catalog-gallery {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}

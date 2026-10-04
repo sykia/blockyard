@@ -41,6 +41,15 @@ pub struct Project {
 }
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct ProjectDetail {
+    pub body: String,
+    pub format: String,
+    pub icon_url: Option<String>,
+    pub gallery: Vec<String>,
+    pub website_url: Option<String>,
+}
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Release {
     pub id: String,
     pub name: String,
@@ -50,10 +59,18 @@ pub struct Release {
 }
 
 fn cf_key() -> Result<String, String> {
-    keyring::Entry::new("app.blockyard.launcher", "curseforge-api-key")
-        .map_err(|e| e.to_string())?
+    match keyring::Entry::new("app.blockyard.launcher", "curseforge-api-key")
+        .map_err(|e| format!("Cannot access system keyring: {e}"))?
         .get_password()
-        .map_err(|_| "CurseForge API key is missing. Add it in Settings.".to_owned())
+    {
+        Ok(key) if !key.trim().is_empty() => Ok(key),
+        Ok(_) | Err(keyring::Error::NoEntry) => {
+            Err("CurseForge API key is missing. Add it in Settings.".into())
+        }
+        Err(e) => Err(format!(
+            "Cannot read CurseForge API key from system keyring: {e}"
+        )),
+    }
 }
 pub fn key_is_set() -> bool {
     cf_key().is_ok()
@@ -214,6 +231,74 @@ pub async fn search(
         }
     }
 }
+pub async fn project_detail(
+    client: &reqwest::Client,
+    provider: Provider,
+    project: &str,
+) -> Result<ProjectDetail, String> {
+    match provider {
+        Provider::Modrinth => {
+            let data = json(
+                client,
+                &provider,
+                url(MODRINTH, &format!("/project/{project}"))?,
+            )
+            .await?;
+            let gallery = data["gallery"]
+                .as_array()
+                .map(|items| {
+                    items
+                        .iter()
+                        .filter_map(|item| item["url"].as_str().map(str::to_owned))
+                        .collect()
+                })
+                .unwrap_or_default();
+            let slug = str_field(&data, "slug");
+            Ok(ProjectDetail {
+                body: str_field(&data, "body").to_owned(),
+                format: "markdown".into(),
+                icon_url: data["icon_url"].as_str().map(str::to_owned),
+                gallery,
+                website_url: Some(format!(
+                    "https://modrinth.com/{}/{}",
+                    str_field(&data, "project_type"),
+                    if slug.is_empty() { project } else { slug }
+                )),
+            })
+        }
+        Provider::Curseforge => {
+            let detail = json(
+                client,
+                &provider,
+                url(CURSEFORGE, &format!("/mods/{project}"))?,
+            )
+            .await?;
+            let description = json(
+                client,
+                &provider,
+                url(CURSEFORGE, &format!("/mods/{project}/description"))?,
+            )
+            .await?;
+            let data = &detail["data"];
+            let gallery = data["screenshots"]
+                .as_array()
+                .map(|items| {
+                    items
+                        .iter()
+                        .filter_map(|item| item["url"].as_str().map(str::to_owned))
+                        .collect()
+                })
+                .unwrap_or_default();
+            Ok(ProjectDetail {
+                body: description["data"].as_str().unwrap_or("").to_owned(),
+                format: "html".into(),
+                icon_url: data["logo"]["url"].as_str().map(str::to_owned),
+                gallery,
+                website_url: data["links"]["websiteUrl"].as_str().map(str::to_owned),
+            })
+        }
+    }
+}
 pub async fn releases(
     client: &reqwest::Client,
     provider: Provider,
@@ -350,10 +435,40 @@ fn chosen_file(v: &Value, provider: &Provider, extension: &str) -> Result<(Strin
         },
     ))
 }
-async fn fetch_retry(client: &reqwest::Client, job: &Job) -> Result<(), String> {
+fn forgecdn(url: &str) -> bool {
+    reqwest::Url::parse(url).ok().is_some_and(|u| {
+        u.scheme() == "https"
+            && u.host_str()
+                .is_some_and(|h| h == "forgecdn.net" || h.ends_with(".forgecdn.net"))
+    })
+}
+fn cf_download_client() -> Result<reqwest::Client, String> {
+    reqwest::Client::builder()
+        .user_agent(format!("Blockyard/{}", env!("CARGO_PKG_VERSION")))
+        .timeout(std::time::Duration::from_secs(90))
+        .redirect(reqwest::redirect::Policy::custom(|attempt| {
+            if attempt.previous().len() >= 5 || !forgecdn(attempt.url().as_str()) {
+                attempt.error("CurseForge download redirected outside its CDN")
+            } else {
+                attempt.follow()
+            }
+        }))
+        .build()
+        .map_err(|e| e.to_string())
+}
+async fn fetch_retry(
+    client: &reqwest::Client,
+    job: &Job,
+    cf: Option<&(reqwest::Client, String)>,
+) -> Result<(), String> {
     let mut last = String::new();
     for attempt in 0..3 {
-        match download::fetch(client, job).await {
+        let result = if let Some((authenticated, key)) = cf.filter(|_| forgecdn(&job.url)) {
+            download::fetch_with_key(authenticated, job, key).await
+        } else {
+            download::fetch(client, job).await
+        };
+        match result {
             Ok(()) => return Ok(()),
             Err(error) => last = error,
         }
@@ -375,6 +490,11 @@ pub async fn install_mod(
         return Err("Choose a Fabric or NeoForge instance for mods".into());
     }
     let v = version(client, &provider, project, release).await?;
+    let cf = if matches!(provider, Provider::Curseforge) {
+        Some((cf_download_client()?, cf_key()?))
+    } else {
+        None
+    };
     if matches!(provider, Provider::Modrinth)
         && (!as_strings(&v["game_versions"]).contains(&instance.version)
             || !as_strings(&v["loaders"])
@@ -395,7 +515,7 @@ pub async fn install_mod(
             .join(&instance.id)
             .join("game/mods")
             .join(name);
-        fetch_retry(client, &job).await?;
+        fetch_retry(client, &job, cf.as_ref()).await?;
         if matches!(provider, Provider::Modrinth) {
             if let Some(deps) = current["dependencies"].as_array() {
                 for dep in deps.iter().filter(|d| d["dependency_type"] == "required") {
@@ -546,6 +666,11 @@ pub async fn install_pack(
     release: &str,
 ) -> Result<Instance, String> {
     let v = version(client, &provider, project, release).await?;
+    let cf = if matches!(provider, Provider::Curseforge) {
+        Some((cf_download_client()?, cf_key()?))
+    } else {
+        None
+    };
     let extension = if matches!(provider, Provider::Modrinth) {
         ".mrpack"
     } else {
@@ -561,7 +686,7 @@ pub async fn install_pack(
     std::fs::create_dir_all(&game).map_err(|e| e.to_string())?;
     archive_job.path = folder.join(format!("pack{extension}"));
     let result = async {
-        fetch_retry(client, &archive_job).await?;
+        fetch_retry(client, &archive_job, cf.as_ref()).await?;
         let meta = std::fs::metadata(&archive_job.path).map_err(|e| e.to_string())?;
         if meta.len() > MAX_ARCHIVE {
             return Err("Pack archive exceeds size limit".into());
@@ -698,9 +823,10 @@ pub async fn install_pack(
             &game,
             &prefixes.iter().map(String::as_str).collect::<Vec<_>>(),
         )?;
+        let cf_ref = cf.as_ref();
         let results = futures::stream::iter(
             jobs.into_iter()
-                .map(|j| async move { fetch_retry(client, &j).await }),
+                .map(|j| async move { fetch_retry(client, &j, cf_ref).await }),
         )
         .buffer_unordered(settings.download_concurrency.clamp(1, 32))
         .collect::<Vec<_>>()
@@ -736,6 +862,8 @@ mod tests {
     #[test]
     fn paths() {
         assert!(allowed_pack_url("https://cdn.modrinth.com/data/x"));
+        assert!(forgecdn("https://edge.forgecdn.net/files/1"));
+        assert!(!forgecdn("https://edge.forgecdn.net.evil.test/files/1"));
         assert!(!allowed_pack_url("https://cdn.modrinth.com.evil.test/x"));
         assert!(!allowed_pack_url("http://github.com/x"));
         assert!(safe_pack_path("mods/a.jar").is_ok());

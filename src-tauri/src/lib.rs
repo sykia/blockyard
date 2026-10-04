@@ -512,6 +512,14 @@ async fn catalog_search(
     catalog::search(&state.client, provider, kind, &query, instance.as_ref()).await
 }
 #[tauri::command]
+async fn catalog_project_detail(
+    state: tauri::State<'_, State>,
+    provider: catalog::Provider,
+    project: String,
+) -> Result<catalog::ProjectDetail, String> {
+    catalog::project_detail(&state.client, provider, &project).await
+}
+#[tauri::command]
 async fn catalog_releases(
     state: tauri::State<'_, State>,
     provider: catalog::Provider,
@@ -599,6 +607,7 @@ pub fn run() {
             catalog_set_key,
             catalog_search,
             catalog_releases,
+            catalog_project_detail,
             catalog_install_mod,
             catalog_install_pack,
             versions,

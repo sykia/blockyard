@@ -349,6 +349,7 @@ function App() {
           <CatalogView
             instances={db?.instances || []}
             target={catalogTarget}
+            onSettings={() => setPage("settings")}
             onInstalled={async (i) => {
               await refresh();
               if (i) setSelected(i.id);

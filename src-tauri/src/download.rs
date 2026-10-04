@@ -45,6 +45,12 @@ pub async fn valid(path: &Path, hash: Option<&str>, size: Option<u64>) -> bool {
     true
 }
 pub async fn fetch(client: &reqwest::Client, job: &Job) -> Result<(), String> {
+    fetch_inner(client, job, None).await
+}
+pub async fn fetch_with_key(client: &reqwest::Client, job: &Job, key: &str) -> Result<(), String> {
+    fetch_inner(client, job, Some(key)).await
+}
+async fn fetch_inner(client: &reqwest::Client, job: &Job, key: Option<&str>) -> Result<(), String> {
     if valid(&job.path, job.sha1.as_deref(), job.size).await {
         return Ok(());
     }
@@ -60,8 +66,11 @@ pub async fn fetch(client: &reqwest::Client, job: &Job) -> Result<(), String> {
         .path
         .with_extension(format!("part-{}", uuid::Uuid::new_v4()));
     let result = async {
-        let response = client
-            .get(&job.url)
+        let mut request = client.get(&job.url);
+        if let Some(key) = key {
+            request = request.header("x-api-key", key);
+        }
+        let response = request
             .send()
             .await
             .map_err(|e| e.to_string())?
