@@ -10,6 +10,9 @@ export function SettingsView({
 }) {
   const [s, setS] = useState(settings),
     [ready, setReady] = useState(false),
+    [curseKey, setCurseKey] = useState(""),
+    [keySaved, setKeySaved] = useState(false),
+    [keyMessage, setKeyMessage] = useState(""),
     [update, setUpdate] = useState<string | null>(null),
     [updating, setUpdating] = useState(false),
     [updateMessage, setUpdateMessage] = useState("");
@@ -21,6 +24,25 @@ export function SettingsView({
       .then(setReady)
       .catch(() => setReady(false));
   }, []);
+  useEffect(() => {
+    api<boolean>("catalog_key_status")
+      .then(setKeySaved)
+      .catch(() => {});
+  }, []);
+  const saveKey = async () => {
+    try {
+      await api("catalog_set_key", { key: curseKey });
+      setKeySaved(Boolean(curseKey.trim()));
+      setCurseKey("");
+      setKeyMessage(
+        curseKey.trim()
+          ? "API key saved in system keyring."
+          : "API key removed.",
+      );
+    } catch (e) {
+      setKeyMessage(String(e));
+    }
+  };
   const check = async () => {
     setUpdating(true);
     setUpdateMessage("");
@@ -145,6 +167,44 @@ export function SettingsView({
             <Check size={16} /> Save settings
           </button>
         </div>
+      </div>
+      <div className="settings-card">
+        <h3>CurseForge catalog</h3>
+        <p className="muted">
+          {keySaved
+            ? "API key configured"
+            : "Add your CurseForge API key to browse and install files."}{" "}
+          The key is stored in your system keyring.
+        </p>
+        <label>
+          CurseForge API key
+          <input
+            type="password"
+            value={curseKey}
+            onChange={(e) => setCurseKey(e.target.value)}
+            placeholder="Paste your key"
+          />
+        </label>
+        <div className="settings-footer">
+          <button className="primary" onClick={saveKey}>
+            Save key
+          </button>
+          <button
+            className="secondary"
+            onClick={() => {
+              setCurseKey("");
+              api("catalog_set_key", { key: "" })
+                .then(() => {
+                  setKeySaved(false);
+                  setKeyMessage("API key removed.");
+                })
+                .catch((e) => setKeyMessage(String(e)));
+            }}
+          >
+            Remove key
+          </button>
+        </div>
+        {keyMessage && <p className="muted">{keyMessage}</p>}
       </div>
       <div className="settings-card">
         <div className="section-head">

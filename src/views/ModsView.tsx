@@ -7,10 +7,12 @@ export function ModsView({
   instance,
   action,
   onBack,
+  onDiscover,
 }: {
   instance: Instance;
   action: (f: () => Promise<unknown>) => void;
   onBack: () => void;
+  onDiscover: () => void;
 }) {
   const [mods, setMods] = useState<Mod[]>([]);
   const load = () => api<Mod[]>("mods", { id: instance.id }).then(setMods);
@@ -32,6 +34,9 @@ export function ModsView({
           <h2>{instance.name} mods</h2>
           <p>{mods.length} files in this instance</p>
         </div>
+        <button className="secondary" onClick={onDiscover}>
+          Browse catalogs
+        </button>
         <button
           className="primary"
           onClick={() =>

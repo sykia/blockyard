@@ -19,7 +19,7 @@ Screenshots use a separate sample offline profile. No personal account data is i
 Download the installers from the [latest GitHub release](https://github.com/sykia/blockyard/releases/latest).
 
 - **Windows:** run the `-setup.exe` NSIS installer. The installer is currently unsigned, so Windows may ask you to confirm it.
-- **Arch Linux:** download `blockyard-0.1.0-1-x86_64.pkg.tar.zst`, then install it with `sudo pacman -U ./blockyard-0.1.0-1-x86_64.pkg.tar.zst`. The package adds a desktop launcher and declares its WebKitGTK runtime dependencies. This is a release package for `pacman -U`; it is not in the official Arch repositories.
+- **Arch Linux:** download `blockyard-0.2.0-1-x86_64.pkg.tar.zst`, then install it with `sudo pacman -U ./blockyard-0.2.0-1-x86_64.pkg.tar.zst`. The package adds a desktop launcher and declares its WebKitGTK runtime dependencies. This is a release package for `pacman -U`; it is not in the official Arch repositories.
 - **Other Linux:** use the AppImage, or install the DEB with `sudo apt install ./*.deb` or the RPM with `sudo dnf install ./*.rpm`, as appropriate for your distribution. Make the AppImage executable with `chmod +x ./*.AppImage` before running it.
 
 The GitHub Actions workflow builds Windows, AppImage, DEB, RPM and Arch packages for each version tag. Release binaries are currently unsigned; inspect the release assets and SHA-256 checksums before installing.
@@ -71,7 +71,13 @@ Minecraft Services may require separate approval for the application ID. An unap
 
 ## Architecture
 
-`src-tauri/src/metadata.rs` parses Mojang metadata and rule based arguments. `download.rs` owns verified file acquisition. `engine.rs` assembles the launch. `auth.rs` owns the Microsoft/Xbox/Minecraft token chain; `offline.rs` creates local identities. `neoforge.rs` owns the official installer integration. `java.rs` finds or provisions runtimes. `store.rs` persists nonsecret state atomically. `hyprland.rs` handles optional floating window placement. React in `src/main.tsx` handles navigation and live status; `src/views/` contains the instance, account, mod, settings and log screens.
+`src-tauri/src/metadata.rs` parses Mojang metadata and rule based arguments. `download.rs` owns verified file acquisition. `engine.rs` assembles the launch. `auth.rs` owns the Microsoft/Xbox/Minecraft token chain; `offline.rs` creates local identities. `neoforge.rs` owns the official installer integration. `java.rs` finds or provisions runtimes. `store.rs` persists nonsecret state atomically. `hyprland.rs` handles optional floating window placement. `catalog.rs` integrates Modrinth and CurseForge project search, version selection, dependency downloads and pack imports. React in `src/main.tsx` handles navigation and live status; `src/views/` contains the instance, account, mod, settings and log screens.
+
+## Modrinth and CurseForge catalogs
+
+Open **Discover** to search Modrinth or CurseForge for mods and modpacks. For a mod, select a Fabric or NeoForge instance; search and available versions are filtered by its Minecraft version and loader. Installation places the JAR in that instance and installs required dependencies. For a modpack, select a release and choose **Install as new instance**. Blockyard reads the `.mrpack` or CurseForge manifest, creates an independent instance, downloads its required files and applies client overrides. Pack imports validate paths and archive sizes; a failed import is removed. Minecraft itself is installed when the new instance is first launched.
+
+Modrinth public catalog access needs no key. CurseForge requires an [official API key](https://support.curseforge.com/support/solutions/articles/9000208346-about-the-curseforge-api-and-how-to-apply-for-a-key). Apply through CurseForge, then paste the key in **Settings → CurseForge catalog**. It is stored in the operating system keyring, not `state.json` or the repository. A CurseForge project may disallow third party downloads; Blockyard respects this and reports that the file cannot be installed. Some packs require Forge or Quilt, which Blockyard cannot currently launch.
 
 ## Current limits
 
@@ -79,7 +85,7 @@ Minecraft Services may require separate approval for the application ID. An unap
 - NeoForge support is implemented through the official installer, but has not been exercised end to end against a signed in account in this environment.
 - Signed self update is implemented but inactive in ordinary development builds. The publisher must provide `BLOCKYARD_UPDATE_PUBKEY` (the public key contents) and `BLOCKYARD_UPDATE_ENDPOINT` (an HTTPS Tauri update feed) at compile time, then build with `npm run tauri build -- --config src-tauri/updater.release.conf.json` and sign the artifacts with `TAURI_SIGNING_PRIVATE_KEY`. The private key must stay outside the repository. The Settings screen only offers update checks when a build includes both values. See [Tauri updater](https://v2.tauri.app/plugin/updater/).
 - Older release asset layouts may require additional compatibility work. Current release metadata is the primary target. Windows and macOS builds have not been exercised end to end; the current OS version range probe is implemented for Unix and needs a native Windows version provider.
-- Mod management is local JAR import, enable/disable and removal. There is no catalog or dependency resolver yet.
+- Catalog installations resolve required mod dependencies and keep each pack in its own instance. Optional dependencies are not selected automatically. CurseForge requires a user supplied API key, and packs that require Forge or Quilt are unsupported.
 - On Arch Linux, the production binary was built and launched with WebKitGTK 4.1 through XWayland. Its Hyprland window opened floating at 1180×760 without a per-user rule. A complete game session has not yet been verified here.
 
 ## License

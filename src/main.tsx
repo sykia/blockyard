@@ -12,6 +12,7 @@ import {
   X,
   ChevronRight,
   Puzzle,
+  Compass,
 } from "lucide-react";
 import {
   api,
@@ -24,6 +25,7 @@ import {
 import { CreateModal } from "./views/CreateModal";
 import { InstanceDetail } from "./views/InstanceDetail";
 import { ModsView } from "./views/ModsView";
+import { CatalogView } from "./views/CatalogView";
 import { AccountsView } from "./views/AccountsView";
 import { SettingsView } from "./views/SettingsView";
 import { LogsView } from "./views/LogsView";
@@ -38,7 +40,10 @@ function App() {
     [lines, setLines] = useState<string[]>([]),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
-    [create, setCreate] = useState(false);
+    [create, setCreate] = useState(false),
+    [catalogTarget, setCatalogTarget] = useState<Instance | undefined>(
+      undefined,
+    );
   const refresh = async () => {
     try {
       const next = await api<Database>("snapshot");
@@ -103,6 +108,7 @@ function App() {
           {[
             ["home", "Overview", Box],
             ["instances", "Instances", Puzzle],
+            ["discover", "Discover", Compass],
             ["accounts", "Accounts", Users],
             ["logs", "Logs", ScrollText],
             ["settings", "Settings", SettingsIcon],
@@ -110,7 +116,10 @@ function App() {
             <button
               key={key as string}
               className={page === key ? "active" : ""}
-              onClick={() => setPage(key as string)}
+              onClick={() => {
+                if (key === "discover") setCatalogTarget(undefined);
+                setPage(key as string);
+              }}
             >
               <Icon size={18} />
               {label as string}
@@ -119,7 +128,7 @@ function App() {
         </nav>
         <div className="sidebar-foot">
           <span className="signal" /> Minecraft Java Edition{" "}
-          <small>v0.1.0</small>
+          <small>v0.2.0</small>
         </div>
       </aside>
       <main>
@@ -136,6 +145,7 @@ function App() {
                     logs: "Logs & crashes",
                     settings: "Settings",
                     mods: "Mods",
+                    discover: "Discover",
                   } as Record<string, string>
                 )[page]
               }
@@ -335,11 +345,25 @@ function App() {
             </div>
           </div>
         )}
+        {page === "discover" && (
+          <CatalogView
+            instances={db?.instances || []}
+            target={catalogTarget}
+            onInstalled={async (i) => {
+              await refresh();
+              if (i) setSelected(i.id);
+            }}
+          />
+        )}
         {page === "mods" && current && (
           <ModsView
             instance={current}
             action={action}
             onBack={() => setPage("instances")}
+            onDiscover={() => {
+              setCatalogTarget(current);
+              setPage("discover");
+            }}
           />
         )}
         {page === "accounts" && db && (

@@ -1,4 +1,5 @@
 mod auth;
+mod catalog;
 mod download;
 mod engine;
 #[cfg(target_os = "linux")]
@@ -486,6 +487,93 @@ async fn instance_directory(state: tauri::State<'_, State>, id: String) -> Resul
         .to_string_lossy()
         .to_string())
 }
+#[tauri::command]
+async fn catalog_key_status() -> bool {
+    catalog::key_is_set()
+}
+#[tauri::command]
+async fn catalog_set_key(key: String) -> Result<(), String> {
+    catalog::set_key(&key)
+}
+#[tauri::command]
+async fn catalog_search(
+    state: tauri::State<'_, State>,
+    provider: catalog::Provider,
+    kind: catalog::Kind,
+    query: String,
+    instance_id: Option<String>,
+) -> Result<Vec<catalog::Project>, String> {
+    let db = state.db.lock().await;
+    let instance = instance_id
+        .as_deref()
+        .and_then(|id| db.instances.iter().find(|i| i.id == id))
+        .cloned();
+    drop(db);
+    catalog::search(&state.client, provider, kind, &query, instance.as_ref()).await
+}
+#[tauri::command]
+async fn catalog_releases(
+    state: tauri::State<'_, State>,
+    provider: catalog::Provider,
+    project: String,
+    instance_id: Option<String>,
+) -> Result<Vec<catalog::Release>, String> {
+    let db = state.db.lock().await;
+    let instance = instance_id
+        .as_deref()
+        .and_then(|id| db.instances.iter().find(|i| i.id == id))
+        .cloned();
+    drop(db);
+    catalog::releases(&state.client, provider, &project, instance.as_ref()).await
+}
+#[tauri::command]
+async fn catalog_install_mod(
+    state: tauri::State<'_, State>,
+    provider: catalog::Provider,
+    project: String,
+    release: String,
+    instance_id: String,
+) -> Result<(), String> {
+    let db = state.db.lock().await;
+    let instance = db
+        .instances
+        .iter()
+        .find(|i| i.id == instance_id)
+        .cloned()
+        .ok_or("Instance not found")?;
+    drop(db);
+    catalog::install_mod(
+        &state.client,
+        &state.root,
+        &instance,
+        provider,
+        &project,
+        &release,
+    )
+    .await
+}
+#[tauri::command]
+async fn catalog_install_pack(
+    state: tauri::State<'_, State>,
+    provider: catalog::Provider,
+    project: String,
+    release: String,
+) -> Result<Instance, String> {
+    let settings = state.db.lock().await.settings.clone();
+    let instance = catalog::install_pack(
+        &state.client,
+        &state.root,
+        &settings,
+        provider,
+        &project,
+        &release,
+    )
+    .await?;
+    let mut db = state.db.lock().await;
+    db.instances.push(instance.clone());
+    store::save(&state.root, &db)?;
+    Ok(instance)
+}
 pub fn run() {
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -507,6 +595,12 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             snapshot,
+            catalog_key_status,
+            catalog_set_key,
+            catalog_search,
+            catalog_releases,
+            catalog_install_mod,
+            catalog_install_pack,
             versions,
             fabric_versions,
             neoforge_versions,
