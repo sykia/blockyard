@@ -27,7 +27,7 @@ zip = "2"
 regex = "1"
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
-keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
+keyring = { version = "3", features = ["sync-secret-service", "crypto-rust", "windows-native", "apple-native"] }
 thiserror = "2"
 url = "2"
 tar = "0.4"

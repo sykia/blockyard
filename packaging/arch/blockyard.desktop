@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Blockyard
+Comment=Minecraft Java Edition launcher
+Exec=blockyard
+Icon=blockyard
+Terminal=false
+Categories=Game;
+StartupWMClass=Blockyard

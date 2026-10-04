@@ -1,0 +1,19 @@
+# Maintainer: sykia <203451710+sykia@users.noreply.github.com>
+pkgname=blockyard
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Desktop launcher for Minecraft Java Edition'
+arch=('x86_64')
+url='https://github.com/sykia/blockyard'
+license=('MIT')
+depends=('webkit2gtk-4.1' 'gtk3' 'xdg-utils' 'hicolor-icon-theme')
+options=('!debug')
+source=()
+sha256sums=()
+
+package() {
+  install -Dm755 "$startdir/../../src-tauri/target/release/blockyard" "$pkgdir/usr/bin/blockyard"
+  install -Dm644 "$startdir/blockyard.desktop" "$pkgdir/usr/share/applications/blockyard.desktop"
+  install -Dm644 "$startdir/../../src-tauri/icons/icon.png" "$pkgdir/usr/share/icons/hicolor/256x256/apps/blockyard.png"
+  install -Dm644 "$startdir/../../LICENSE" "$pkgdir/usr/share/licenses/blockyard/LICENSE"
+}

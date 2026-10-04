@@ -14,6 +14,16 @@ Screenshots use a separate sample offline profile. No personal account data is i
 
 ![Launcher settings](docs/screenshots/settings.png)
 
+## Download and install
+
+Download the installers from the [latest GitHub release](https://github.com/sykia/blockyard/releases/latest).
+
+- **Windows:** run the `-setup.exe` NSIS installer. The installer is currently unsigned, so Windows may ask you to confirm it.
+- **Arch Linux:** download `blockyard-0.1.0-1-x86_64.pkg.tar.zst`, then install it with `sudo pacman -U ./blockyard-0.1.0-1-x86_64.pkg.tar.zst`. The package adds a desktop launcher and declares its WebKitGTK runtime dependencies. This is a release package for `pacman -U`; it is not in the official Arch repositories.
+- **Other Linux:** use the AppImage, or install the DEB with `sudo apt install ./*.deb` or the RPM with `sudo dnf install ./*.rpm`, as appropriate for your distribution. Make the AppImage executable with `chmod +x ./*.AppImage` before running it.
+
+The GitHub Actions workflow builds Windows, AppImage, DEB, RPM and Arch packages for each version tag. Release binaries are currently unsigned; inspect the release assets and SHA-256 checksums before installing.
+
 ## Build and run
 
 Requirements: Rust stable, Node.js 20+, npm, and the [Tauri 2 system prerequisites](https://v2.tauri.app/start/prerequisites/). On Arch Linux:

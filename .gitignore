@@ -9,3 +9,6 @@ src-tauri/gen/
 .agents/
 .aws/
 .codex/
+packaging/arch/pkg/
+packaging/arch/src/
+packaging/arch/*.pkg.tar.zst
