@@ -19,7 +19,7 @@ Screenshots use a separate sample offline profile. No personal account data is i
 Download the installers from the [latest GitHub release](https://github.com/sykia/blockyard/releases/latest).
 
 - **Windows:** run the `-setup.exe` NSIS installer. The installer is currently unsigned, so Windows may ask you to confirm it.
-- **Arch Linux:** download `blockyard-0.3.1-1-x86_64.pkg.tar.zst`, then install it with `sudo pacman -U ./blockyard-0.3.1-1-x86_64.pkg.tar.zst`. The package adds a desktop launcher and declares its WebKitGTK runtime dependencies. This is a release package for `pacman -U`; it is not in the official Arch repositories.
+- **Arch Linux:** download `blockyard-0.4.0-1-x86_64.pkg.tar.zst`, then install it with `sudo pacman -U ./blockyard-0.4.0-1-x86_64.pkg.tar.zst`. The package adds a desktop launcher and declares its WebKitGTK runtime dependencies. This is a release package for `pacman -U`; it is not in the official Arch repositories.
 - **Other Linux:** use the AppImage, or install the DEB with `sudo apt install ./*.deb` or the RPM with `sudo dnf install ./*.rpm`, as appropriate for your distribution. Make the AppImage executable with `chmod +x ./*.AppImage` before running it.
 
 The GitHub Actions workflow builds Windows, AppImage, DEB, RPM and Arch packages for each version tag. Update artifacts are signed with a Tauri updater key; `latest.json` contains the signed update feed. Windows installers are not Authenticode signed, so Windows may still show an Unknown Publisher warning. Release assets include SHA-256 checksums.
@@ -55,9 +55,11 @@ The app data directory is chosen by Tauri (`app.blockyard.launcher`). It contain
 
 Choose **Dark**, **Light**, or **System** in **Settings → Theme**, then save the launcher settings. The selection is stored with other launcher preferences; System follows the operating system's light/dark preference, including changes while Blockyard is open. Selecting a theme previews it immediately, and leaving Settings without saving restores the saved theme.
 
-**Settings → Enable interface animations** controls page entrances, dialogs, cards, buttons, inputs and progress transitions. The choice previews immediately and is saved with launcher settings; the operating system's Reduce Motion preference takes priority. The app header is a native Tauri drag area, so a floating window follows the pointer using the window manager's normal movement. Window movement effects themselves are controlled by the operating system or compositor, not by the web interface.
+**Settings → Enable interface animations** controls page entrances, dialogs, cards, buttons, inputs and progress transitions. The choice previews immediately and is saved with launcher settings; the operating system's Reduce Motion preference takes priority. Use the operating system's title bar to move the window; the app header no longer starts window dragging.
 
 File integrity checks stream SHA-1 from disk in fixed-size chunks to avoid loading large JARs into memory. Download progress events are limited for large batches, and live game logs are updated in groups while the Logs screen is open. These changes keep the interface responsive during installs and noisy game sessions.
+
+On repeat launches, Blockyard keeps the Mojang version manifest in memory for 15 minutes, remembers the last working Java path while still checking its version, and reuses an installed NeoForge profile when its Minecraft version matches. Libraries and assets share one parallel verification and download queue. File hashes are still checked before launch, so a modified file is downloaded again.
 
 ## Account setup
 

@@ -90,7 +90,7 @@ export function LogsView({
               className="textbutton"
               onClick={() =>
                 navigator.clipboard.writeText(
-                  `Blockyard 0.3.1\nInstance: ${instance?.name || "unknown"} (${instance?.version || "unknown"}, ${instance?.loader.kind || "unknown"})\nStatus: ${status?.phase || "unknown"} / ${status?.exitCode ?? "n/a"}\n${status?.message || ""}\n\n${content.slice(-12000)}`,
+                  `Blockyard 0.4.0\nInstance: ${instance?.name || "unknown"} (${instance?.version || "unknown"}, ${instance?.loader.kind || "unknown"})\nStatus: ${status?.phase || "unknown"} / ${status?.exitCode ?? "n/a"}\n${status?.message || ""}\n\n${content.slice(-12000)}`,
                 )
               }
             >

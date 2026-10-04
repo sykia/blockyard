@@ -1,6 +1,6 @@
 # Maintainer: sykia <203451710+sykia@users.noreply.github.com>
 pkgname=blockyard
-pkgver=0.1.0
+pkgver=0.4.0
 pkgrel=1
 pkgdesc='Desktop launcher for Minecraft Java Edition'
 arch=('x86_64')

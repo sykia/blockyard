@@ -1,5 +1,29 @@
 use regex::Regex;
-use std::{path::PathBuf, process::Command};
+use std::{
+    collections::HashMap,
+    path::PathBuf,
+    process::Command,
+    sync::{Mutex, OnceLock},
+};
+
+static LAST_JAVA: OnceLock<Mutex<HashMap<u32, String>>> = OnceLock::new();
+
+fn remembered(required: u32) -> Option<String> {
+    LAST_JAVA
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap_or_else(|poison| poison.into_inner())
+        .get(&required)
+        .cloned()
+}
+
+fn remember(required: u32, path: &str) {
+    LAST_JAVA
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap_or_else(|poison| poison.into_inner())
+        .insert(required, path.to_owned());
+}
 
 pub fn major(path: &str) -> Result<u32, String> {
     let output = Command::new(path)
@@ -43,6 +67,7 @@ pub fn find(required: u32, override_path: Option<&str>) -> Result<String, String
     for candidate in candidates {
         let path = candidate.to_string_lossy().to_string();
         if major(&path).ok() == Some(required) {
+            remember(required, &path);
             return Ok(path);
         }
     }
@@ -57,6 +82,25 @@ pub async fn resolve(
     required: u32,
     override_path: Option<&str>,
 ) -> Result<String, String> {
+    if override_path.is_none() {
+        if let Some(path) = remembered(required) {
+            if major(&path).ok() == Some(required) {
+                return Ok(path);
+            }
+        }
+        let executable = if cfg!(windows) { "java.exe" } else { "java" };
+        let managed = root.join("runtimes").join(required.to_string());
+        let managed = if cfg!(target_os = "macos") {
+            managed.join("Contents/Home/bin/java")
+        } else {
+            managed.join("bin").join(executable)
+        };
+        if managed.exists() && major(&managed.to_string_lossy()).ok() == Some(required) {
+            let path = managed.to_string_lossy().to_string();
+            remember(required, &path);
+            return Ok(path);
+        }
+    }
     match find(required, override_path) {
         Ok(path) => return Ok(path),
         Err(error) if override_path.is_some() => return Err(error),
@@ -64,10 +108,6 @@ pub async fn resolve(
     }
     let executable = if cfg!(windows) { "java.exe" } else { "java" };
     let home = root.join("runtimes").join(required.to_string());
-    let existing = home.join("bin").join(executable);
-    if existing.exists() && major(&existing.to_string_lossy()).ok() == Some(required) {
-        return Ok(existing.to_string_lossy().to_string());
-    }
     let os = if cfg!(windows) {
         "windows"
     } else if cfg!(target_os = "macos") {
@@ -181,7 +221,9 @@ pub async fn resolve(
     } else {
         home.join("bin").join(executable)
     };
-    Ok(final_java.to_string_lossy().to_string())
+    let path = final_java.to_string_lossy().to_string();
+    remember(required, &path);
+    Ok(path)
 }
 fn unpack_entry<R: std::io::Read>(
     name: &str,

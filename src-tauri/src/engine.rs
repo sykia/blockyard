@@ -7,6 +7,8 @@ use std::{
     collections::HashMap,
     path::{Path, PathBuf},
     process::Stdio,
+    sync::OnceLock,
+    time::{Duration, Instant},
 };
 use tauri::Emitter;
 use tokio::{
@@ -15,6 +17,17 @@ use tokio::{
 };
 
 pub async fn manifest(client: &reqwest::Client, root: &Path) -> Result<Manifest, String> {
+    static CACHE: OnceLock<tokio::sync::Mutex<HashMap<PathBuf, (Instant, Duration, Manifest)>>> =
+        OnceLock::new();
+    let remembered = CACHE.get_or_init(|| tokio::sync::Mutex::new(HashMap::new()));
+    {
+        let cache = remembered.lock().await;
+        if let Some((checked, ttl, value)) = cache.get(root) {
+            if checked.elapsed() < *ttl {
+                return Ok(value.clone());
+            }
+        }
+    }
     let cache = root.join("cache/version_manifest_v2.json");
     let fresh = async {
         let bytes = client
@@ -39,13 +52,21 @@ pub async fn manifest(client: &reqwest::Client, root: &Path) -> Result<Manifest,
         Ok::<_, String>(parsed)
     }
     .await;
-    match fresh {
-        Ok(m) => Ok(m),
+    let (result, ttl) = match fresh {
+        Ok(m) => (m, Duration::from_secs(15 * 60)),
         Err(error) => {
             let bytes = fs::read(cache).await.map_err(|_| error)?;
-            serde_json::from_slice(&bytes).map_err(|e| e.to_string())
+            (
+                serde_json::from_slice(&bytes).map_err(|e| e.to_string())?,
+                Duration::from_secs(30),
+            )
         }
-    }
+    };
+    remembered
+        .lock()
+        .await
+        .insert(root.to_path_buf(), (Instant::now(), ttl, result.clone()));
+    Ok(result)
 }
 async fn json_cached<T: serde::de::DeserializeOwned>(
     client: &reqwest::Client,
@@ -434,7 +455,6 @@ pub async fn run(
     } else {
         None
     };
-    download::fetch_all(&client, jobs, concurrency, &app, id, "libraries").await?;
     let index = base.asset_index.as_ref().ok_or("Asset index missing")?;
     let asset_index: AssetObjects = json_cached(
         &client,
@@ -467,7 +487,8 @@ pub async fn run(
             })
         })
         .collect::<Result<Vec<_>, _>>()?;
-    download::fetch_all(&client, asset_jobs, concurrency, &app, id, "assets").await?;
+    jobs.extend(asset_jobs);
+    download::fetch_all(&client, jobs, concurrency, &app, id, "install").await?;
     if index.id == "legacy" {
         for (name, obj) in &asset_index.objects {
             let relative = download::relative_path(name)?;

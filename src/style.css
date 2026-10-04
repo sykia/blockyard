@@ -999,16 +999,6 @@ select option {
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
 
-header {
-  cursor: grab;
-  user-select: none;
-}
-header:active {
-  cursor: grabbing;
-}
-header button {
-  cursor: pointer;
-}
 .motion-note {
   margin: -6px 0 4px 26px;
   font-size: 12px;

@@ -50,6 +50,30 @@ mod tests {
         assert_eq!(version_prefix("26.3").as_deref(), Some("26.3.0."));
         assert_eq!(version_prefix("26.1.2").as_deref(), Some("26.1.2."));
     }
+    #[tokio::test]
+    async fn installed_profile_needs_no_network_lookup() {
+        let root = std::env::temp_dir().join(format!("blockyard-neo-{}", uuid::Uuid::new_v4()));
+        let directory = root.join("versions/neoforge-21.1.200");
+        std::fs::create_dir_all(&directory).unwrap();
+        std::fs::write(
+            directory.join("neoforge-21.1.200.json"),
+            br#"{"id":"neoforge-21.1.200","mainClass":"example.Main","libraries":[],"inheritsFrom":"1.21.1"}"#,
+        )
+        .unwrap();
+        let profile = install(
+            &reqwest::Client::new(),
+            &root,
+            "1.21.1",
+            "21.1.200",
+            "java",
+            Path::new("missing.json"),
+            Path::new("missing.jar"),
+        )
+        .await
+        .unwrap();
+        assert_eq!(profile.id, "neoforge-21.1.200");
+        std::fs::remove_dir_all(root).unwrap();
+    }
 }
 pub async fn install(
     client: &reqwest::Client,
@@ -60,18 +84,28 @@ pub async fn install(
     base_json: &Path,
     base_jar: &Path,
 ) -> Result<Version, String> {
+    let version_id = format!("neoforge-{loader}");
+    let profile = root
+        .join("versions")
+        .join(&version_id)
+        .join(format!("{version_id}.json"));
+    if profile.exists() {
+        let bytes = tokio::fs::read(&profile)
+            .await
+            .map_err(|e| format!("Cannot read NeoForge profile: {e}"))?;
+        if let Ok(installed) = serde_json::from_slice::<Version>(&bytes) {
+            if installed.id == version_id && installed.inherits_from.as_deref() == Some(minecraft) {
+                return Ok(installed);
+            }
+        }
+    }
     if !versions(client, minecraft)
         .await?
         .contains(&loader.to_owned())
     {
         return Err("NeoForge version does not match this Minecraft version".into());
     }
-    let version_id = format!("neoforge-{loader}");
-    let profile = root
-        .join("versions")
-        .join(&version_id)
-        .join(format!("{version_id}.json"));
-    if !profile.exists() {
+    {
         let profiles = root.join("launcher_profiles.json");
         if !profiles.exists() {
             std::fs::write(&profiles, br#"{"profiles":{},"settings":{},"version":3}"#)

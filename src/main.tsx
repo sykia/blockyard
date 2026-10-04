@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { listen } from "@tauri-apps/api/event";
 import { openPath } from "@tauri-apps/plugin-opener";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   Box,
   Play,
@@ -172,22 +171,11 @@ function App() {
         </nav>
         <div className="sidebar-foot">
           <span className="signal" /> Minecraft Java Edition{" "}
-          <small>v0.3.1</small>
+          <small>v0.4.0</small>
         </div>
       </aside>
       <main>
-        <header
-          onMouseDown={(event) => {
-            if (
-              event.button === 0 &&
-              !(event.target as Element).closest("button, a, input, select")
-            ) {
-              void getCurrentWindow()
-                .startDragging()
-                .catch((error) => setError(String(error)));
-            }
-          }}
-        >
+        <header>
           <div className="eyebrow">YOUR MINECRAFT SPACE</div>
           <div className="header-row">
             <h1>
