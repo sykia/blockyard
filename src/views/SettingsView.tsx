@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Check, RefreshCw, Download } from "lucide-react";
 import { api, Settings } from "../shared";
+import { listen } from "@tauri-apps/api/event";
 export function SettingsView({
   settings,
   onSave,
@@ -15,14 +16,36 @@ export function SettingsView({
     [keyMessage, setKeyMessage] = useState(""),
     [update, setUpdate] = useState<string | null>(null),
     [updating, setUpdating] = useState(false),
-    [updateMessage, setUpdateMessage] = useState("");
+    [updateMessage, setUpdateMessage] = useState(""),
+    [downloaded, setDownloaded] = useState(0),
+    [downloadTotal, setDownloadTotal] = useState<number | null>(null),
+    [updatePhase, setUpdatePhase] = useState("");
   useEffect(() => {
     setS(settings);
   }, [settings]);
   useEffect(() => {
     api<boolean>("updater_ready")
-      .then(setReady)
+      .then((available) => {
+        setReady(available);
+        if (available) void check();
+      })
       .catch(() => setReady(false));
+  }, []);
+  useEffect(() => {
+    const listener = listen<{
+      phase: string;
+      received: number;
+      total: number | null;
+      message: string;
+    }>("update-progress", (event) => {
+      setUpdatePhase(event.payload.phase);
+      setDownloaded(event.payload.received);
+      setDownloadTotal(event.payload.total);
+      setUpdateMessage(event.payload.message);
+    });
+    return () => {
+      void listener.then((unlisten) => unlisten());
+    };
   }, []);
   useEffect(() => {
     api<boolean>("catalog_key_status")
@@ -62,10 +85,12 @@ export function SettingsView({
   };
   const install = async () => {
     setUpdating(true);
+    setUpdatePhase("download");
+    setDownloaded(0);
+    setDownloadTotal(null);
     setUpdateMessage("Downloading signed update…");
     try {
       await api("install_update");
-      setUpdateMessage("Update installed. Restart Blockyard to finish.");
       setUpdate(null);
     } catch (e) {
       setUpdateMessage(String(e));
@@ -212,8 +237,8 @@ export function SettingsView({
             <h3>Launcher updates</h3>
             <p>
               {ready
-                ? "Updates are checked against the publisher’s signed release feed."
-                : "Updates become available when the publisher configures a signing key and release feed."}
+                ? "Signed updates are checked automatically when Settings opens."
+                : "Install a packaged release to enable updates."}
             </p>
           </div>
           {ready && (
@@ -223,6 +248,30 @@ export function SettingsView({
           )}
         </div>
         {updateMessage && <p className="muted">{updateMessage}</p>}
+        {updatePhase === "download" && downloadTotal && (
+          <div className="track">
+            <div
+              style={{
+                width: `${Math.min(100, Math.round((downloaded / downloadTotal) * 100))}%`,
+              }}
+            />
+          </div>
+        )}
+        {updatePhase === "download" && (
+          <p className="muted">
+            {downloadTotal
+              ? `${Math.round(downloaded / 1048576)} / ${Math.round(downloadTotal / 1048576)} MB`
+              : `${Math.round(downloaded / 1048576)} MB`}
+          </p>
+        )}
+        {(updatePhase === "installed" || updatePhase === "terminal") && (
+          <button
+            className="secondary"
+            onClick={() => void api("restart_launcher")}
+          >
+            Restart Blockyard after installation
+          </button>
+        )}
         {update && (
           <button className="primary" disabled={updating} onClick={install}>
             <Download size={16} /> Install {update}

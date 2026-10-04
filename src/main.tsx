@@ -128,7 +128,7 @@ function App() {
         </nav>
         <div className="sidebar-foot">
           <span className="signal" /> Minecraft Java Edition{" "}
-          <small>v0.2.0</small>
+          <small>v0.3.0</small>
         </div>
       </aside>
       <main>

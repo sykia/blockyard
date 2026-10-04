@@ -587,7 +587,7 @@ pub fn run() {
                 root,
                 running: Arc::new(Mutex::new(Vec::new())),
             });
-            app.manage(updates::Pending(std::sync::Mutex::new(None)));
+            app.manage(updates::Pending::new());
             updates::register(app.handle()).map_err(std::io::Error::other)?;
             #[cfg(target_os = "linux")]
             hyprland::float_main_window(app.handle());
@@ -623,7 +623,8 @@ pub fn run() {
             instance_directory,
             updates::updater_ready,
             updates::check_update,
-            updates::install_update
+            updates::install_update,
+            updates::restart_launcher
         ]);
     if let Err(e) = builder.run(tauri::generate_context!()) {
         eprintln!("Launcher failed: {e}");

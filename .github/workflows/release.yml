@@ -22,11 +22,15 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: npm ci
       - run: npm run tauri build -- --bundles nsis
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
       - uses: softprops/action-gh-release@v2
         with:
           draft: true
           fail_on_unmatched_files: true
-          files: src-tauri/target/release/bundle/nsis/*-setup.exe
+          files: |
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+            src-tauri/target/release/bundle/nsis/*-setup.exe.sig
 
   linux:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -44,14 +48,19 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils rpm
       - run: npm ci
       - run: npm run tauri build -- --bundles appimage,deb,rpm
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
       - uses: softprops/action-gh-release@v2
         with:
           draft: true
           fail_on_unmatched_files: true
           files: |
             src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/appimage/*.AppImage.sig
             src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/deb/*.deb.sig
             src-tauri/target/release/bundle/rpm/*.rpm
+            src-tauri/target/release/bundle/rpm/*.rpm.sig
 
   arch:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -71,23 +80,32 @@ jobs:
           sed -i "s/^pkgver=.*/pkgver=${GITHUB_REF_NAME#v}/" packaging/arch/PKGBUILD
           chown -R builder:builder packaging/arch
           runuser -u builder -- bash -c 'cd packaging/arch && makepkg --nodeps --noconfirm -f'
+      - name: Sign Arch package
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: npm run tauri signer sign -- --app-version "${GITHUB_REF_NAME#v}" packaging/arch/*.pkg.tar.zst
       - uses: softprops/action-gh-release@v2
         with:
           draft: true
           fail_on_unmatched_files: true
-          files: packaging/arch/*.pkg.tar.zst
+          files: |
+            packaging/arch/*.pkg.tar.zst
+            packaging/arch/*.pkg.tar.zst.sig
 
   checksums:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [windows, linux, arch]
     runs-on: ubuntu-22.04
     steps:
-      - name: Create checksums for release assets
+      - uses: actions/checkout@v4
+      - name: Create signed update feed and checksums
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir assets
           gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --dir assets
+          python3 .github/scripts/update_manifest.py assets "$GITHUB_REF_NAME"
           cd assets
           sha256sum -- * > SHA256SUMS
-          gh release upload "$GITHUB_REF_NAME" SHA256SUMS --repo "$GITHUB_REPOSITORY" --clobber
+          gh release upload "$GITHUB_REF_NAME" SHA256SUMS latest.json --repo "$GITHUB_REPOSITORY" --clobber
+          gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false

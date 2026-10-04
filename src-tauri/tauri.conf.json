@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Blockyard",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "identifier": "app.blockyard.launcher",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -28,6 +28,27 @@
     "active": true,
     "targets": "all",
     "category": "Game",
-    "icon": ["icons/icon.png", "icons/icon.ico"]
+    "icon": [
+      "icons/icon.png",
+      "icons/icon.ico"
+    ],
+    "createUpdaterArtifacts": true,
+    "windows": {
+      "nsis": {
+        "installMode": "both"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEZCQjBBQjRBRTVFRkFENTEKUldSUnJlL2xTcXV3KzZNR2t1TEorR2lQS1pKUEhEUzhIYlIydHZxYmZyYjZEeWpxVGVkZzZiZjgK",
+      "endpoints": [
+        "https://github.com/sykia/blockyard/releases/latest/download/latest.json"
+      ],
+      "requireSignedVersion": true,
+      "windows": {
+        "installMode": "basicUi"
+      }
+    }
   }
 }

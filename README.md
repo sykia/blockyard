@@ -19,10 +19,10 @@ Screenshots use a separate sample offline profile. No personal account data is i
 Download the installers from the [latest GitHub release](https://github.com/sykia/blockyard/releases/latest).
 
 - **Windows:** run the `-setup.exe` NSIS installer. The installer is currently unsigned, so Windows may ask you to confirm it.
-- **Arch Linux:** download `blockyard-0.2.0-1-x86_64.pkg.tar.zst`, then install it with `sudo pacman -U ./blockyard-0.2.0-1-x86_64.pkg.tar.zst`. The package adds a desktop launcher and declares its WebKitGTK runtime dependencies. This is a release package for `pacman -U`; it is not in the official Arch repositories.
+- **Arch Linux:** download `blockyard-0.3.0-1-x86_64.pkg.tar.zst`, then install it with `sudo pacman -U ./blockyard-0.3.0-1-x86_64.pkg.tar.zst`. The package adds a desktop launcher and declares its WebKitGTK runtime dependencies. This is a release package for `pacman -U`; it is not in the official Arch repositories.
 - **Other Linux:** use the AppImage, or install the DEB with `sudo apt install ./*.deb` or the RPM with `sudo dnf install ./*.rpm`, as appropriate for your distribution. Make the AppImage executable with `chmod +x ./*.AppImage` before running it.
 
-The GitHub Actions workflow builds Windows, AppImage, DEB, RPM and Arch packages for each version tag. Release binaries are currently unsigned; inspect the release assets and SHA-256 checksums before installing.
+The GitHub Actions workflow builds Windows, AppImage, DEB, RPM and Arch packages for each version tag. Update artifacts are signed with a Tauri updater key; `latest.json` contains the signed update feed. Windows installers are not Authenticode signed, so Windows may still show an Unknown Publisher warning. Release assets include SHA-256 checksums.
 
 ## Build and run
 
@@ -79,11 +79,22 @@ Open **Discover** to search Modrinth or CurseForge for mods and modpacks. For a 
 
 Modrinth public catalog access needs no key. CurseForge requires an [official API key](https://support.curseforge.com/support/solutions/articles/9000208346-about-the-curseforge-api-and-how-to-apply-for-a-key). Apply through CurseForge, then paste the key in **Settings → CurseForge catalog**. It is stored in the operating system keyring, not `state.json` or the repository. A CurseForge project may disallow third party downloads; Blockyard respects this and reports that the file cannot be installed. Some packs require Forge or Quilt, which Blockyard cannot currently launch.
 
+## Launcher updates
+
+Packaged builds from **0.3.0 onward** check for updates when Settings opens. Click **Install** to download a signed release artifact. The Settings screen shows download progress and verifies its signature before installation. The GitHub Actions release workflow signs every Windows, AppImage, DEB, RPM and Arch artifact, then publishes `latest.json` after all platform builds succeed. The signing private key is stored as the `TAURI_SIGNING_PRIVATE_KEY` GitHub Actions secret; the public key is embedded in the Tauri configuration. Never commit the private key.
+
+- **Arch package:** Blockyard opens a terminal and runs `sudo pacman -U` on the verified package. Type your sudo password in the terminal and watch pacman output.
+- **DEB / RPM:** Blockyard opens a terminal with `sudo apt-get install` or `sudo dnf install` (with `rpm -Uvh` fallback) for the verified package.
+- **AppImage:** Tauri replaces the signed AppImage directly; no system password is required.
+- **Windows:** The signed updater downloads the NSIS installer. Its installation UI shows progress and Windows prompts for administrator approval for the machine-wide installation mode.
+
+Restart Blockyard after Linux installation. The **Restart** button is available in Settings. The 0.2.0 release had no configured update feed or signing key, so upgrade from 0.2.0 to 0.3.0 once using the installer from GitHub; later releases update in the app. A terminal application (`kitty`, Konsole, xterm, Alacritty or GNOME Terminal) and `sudo` are required for system package updates on Linux.
+
 ## Current limits
 
 - A project owned Microsoft client ID with Minecraft Services permission is required for Microsoft sign in. Offline profiles work without one.
 - NeoForge support is implemented through the official installer, but has not been exercised end to end against a signed in account in this environment.
-- Signed self update is implemented but inactive in ordinary development builds. The publisher must provide `BLOCKYARD_UPDATE_PUBKEY` (the public key contents) and `BLOCKYARD_UPDATE_ENDPOINT` (an HTTPS Tauri update feed) at compile time, then build with `npm run tauri build -- --config src-tauri/updater.release.conf.json` and sign the artifacts with `TAURI_SIGNING_PRIVATE_KEY`. The private key must stay outside the repository. The Settings screen only offers update checks when a build includes both values. See [Tauri updater](https://v2.tauri.app/plugin/updater/).
+- Self-update is available in packaged 0.3.0+ builds. Older builds need one manual upgrade. The Windows installer has a Tauri updater signature but no Authenticode publisher certificate.
 - Older release asset layouts may require additional compatibility work. Current release metadata is the primary target. Windows and macOS builds have not been exercised end to end; the current OS version range probe is implemented for Unix and needs a native Windows version provider.
 - Catalog installations resolve required mod dependencies and keep each pack in its own instance. Optional dependencies are not selected automatically. CurseForge requires a user supplied API key, and packs that require Forge or Quilt are unsupported.
 - On Arch Linux, the production binary was built and launched with WebKitGTK 4.1 through XWayland. Its Hyprland window opened floating at 1180×760 without a per-user rule. A complete game session has not yet been verified here.
