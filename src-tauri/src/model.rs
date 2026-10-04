@@ -31,6 +31,8 @@ pub struct Settings {
     pub download_concurrency: usize,
     pub show_snapshots: bool,
     pub theme: String,
+    #[serde(default = "default_animations")]
+    pub animations_enabled: bool,
     pub minimize_on_launch: bool,
     pub width: u32,
     pub height: u32,
@@ -44,12 +46,16 @@ impl Default for Settings {
             download_concurrency: 8,
             show_snapshots: false,
             theme: "dark".into(),
+            animations_enabled: true,
             minimize_on_launch: false,
             width: 1280,
             height: 720,
             microsoft_client_id: String::new(),
         }
     }
+}
+fn default_animations() -> bool {
+    true
 }
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

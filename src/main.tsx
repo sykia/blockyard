@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { listen } from "@tauri-apps/api/event";
 import { openPath } from "@tauri-apps/plugin-opener";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   Box,
   Play,
@@ -31,6 +32,7 @@ import { SettingsView } from "./views/SettingsView";
 import { LogsView } from "./views/LogsView";
 import "./style.css";
 import { applyTheme, normalizeTheme } from "./theme";
+import { applyMotion } from "./motion";
 
 function App() {
   const [db, setDb] = useState<Database | null>(null),
@@ -45,6 +47,10 @@ function App() {
     [catalogTarget, setCatalogTarget] = useState<Instance | undefined>(
       undefined,
     );
+  const logBuffer = useRef<string[]>([]);
+  const logFlush = useRef<number | null>(null);
+  const pageRef = useRef(page);
+  pageRef.current = page;
   const refresh = async () => {
     try {
       const next = await api<Database>("snapshot");
@@ -61,14 +67,28 @@ function App() {
       if (e.payload.phase === "error" || e.payload.phase === "crashed")
         setPage("logs");
     });
-    const un2 = listen<{ instanceId: string; line: string }>("game-log", (e) =>
-      setLines((v) => [...v.slice(-499), e.payload.line]),
+    const un2 = listen<{ instanceId: string; line: string }>(
+      "game-log",
+      (e) => {
+        logBuffer.current.push(e.payload.line);
+        if (logBuffer.current.length > 500) logBuffer.current.shift();
+        if (pageRef.current === "logs" && logFlush.current === null) {
+          logFlush.current = window.setTimeout(() => {
+            if (pageRef.current === "logs") setLines([...logBuffer.current]);
+            logFlush.current = null;
+          }, 100);
+        }
+      },
     );
     return () => {
       un1.then((f) => f());
       un2.then((f) => f());
+      if (logFlush.current !== null) window.clearTimeout(logFlush.current);
     };
   }, []);
+  useEffect(() => {
+    if (page === "logs") setLines([...logBuffer.current]);
+  }, [page]);
   useEffect(() => {
     if (db)
       api<Version[]>("versions")
@@ -85,6 +105,18 @@ function App() {
       // The saved backend setting remains authoritative when storage is unavailable.
     }
   }, [db?.settings.theme]);
+  useEffect(() => {
+    if (!db) return;
+    applyMotion(db.settings.animationsEnabled);
+    try {
+      localStorage.setItem(
+        "blockyard-animations",
+        db.settings.animationsEnabled ? "on" : "off",
+      );
+    } catch {
+      // The saved backend setting remains authoritative when storage is unavailable.
+    }
+  }, [db?.settings.animationsEnabled]);
   const action = async (fn: () => Promise<unknown>) => {
     setError("");
     setBusy(true);
@@ -103,6 +135,7 @@ function App() {
   const play = () =>
     current &&
     action(async () => {
+      logBuffer.current = [];
       setLines([]);
       await api("play", { id: current.id });
     });
@@ -143,7 +176,18 @@ function App() {
         </div>
       </aside>
       <main>
-        <header>
+        <header
+          onMouseDown={(event) => {
+            if (
+              event.button === 0 &&
+              !(event.target as Element).closest("button, a, input, select")
+            ) {
+              void getCurrentWindow()
+                .startDragging()
+                .catch((error) => setError(String(error)));
+            }
+          }}
+        >
           <div className="eyebrow">YOUR MINECRAFT SPACE</div>
           <div className="header-row">
             <h1>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
@@ -146,26 +146,30 @@ export function CatalogView({
         : "https://www.curseforge.com";
     openExternal(raw, base);
   };
-  const descriptionHtml = detail
-    ? DOMPurify.sanitize(
-        detail.format === "markdown"
-          ? (marked.parse(detail.body, { async: false }) as string)
-          : detail.body,
-        {
-          USE_PROFILES: { html: true },
-          FORBID_TAGS: [
-            "iframe",
-            "style",
-            "form",
-            "video",
-            "audio",
-            "object",
-            "embed",
-          ],
-          FORBID_ATTR: ["style"],
-        },
-      ).replace(/(src|href)="\/\//g, '$1="https://')
-    : "";
+  const descriptionHtml = useMemo(
+    () =>
+      detail
+        ? DOMPurify.sanitize(
+            detail.format === "markdown"
+              ? (marked.parse(detail.body, { async: false }) as string)
+              : detail.body,
+            {
+              USE_PROFILES: { html: true },
+              FORBID_TAGS: [
+                "iframe",
+                "style",
+                "form",
+                "video",
+                "audio",
+                "object",
+                "embed",
+              ],
+              FORBID_ATTR: ["style"],
+            },
+          ).replace(/(src|href)="\/\//g, '$1="https://')
+        : "",
+    [detail],
+  );
   const install = async () => {
     if (!selected || !release) return;
     setInstalling(true);
@@ -330,7 +334,7 @@ export function CatalogView({
               onClick={() => void choose(p)}
             >
               {p.iconUrl ? (
-                <img src={p.iconUrl} alt="" />
+                <img src={p.iconUrl} alt="" loading="lazy" decoding="async" />
               ) : (
                 <span className="catalog-placeholder" />
               )}
@@ -387,6 +391,7 @@ export function CatalogView({
                       src={url}
                       alt={`${selected.title} screenshot ${index + 1}`}
                       loading="lazy"
+                      decoding="async"
                     />
                   ))}
                 </div>

@@ -4,6 +4,7 @@ import { api, Settings } from "../shared";
 import { listen } from "@tauri-apps/api/event";
 import { applyTheme } from "../theme";
 import type { Theme } from "../theme";
+import { applyMotion } from "../motion";
 export function SettingsView({
   settings,
   onSave,
@@ -27,6 +28,11 @@ export function SettingsView({
   }, [settings]);
   useEffect(() => applyTheme(s.theme), [s.theme]);
   useEffect(() => () => applyTheme(settings.theme), [settings.theme]);
+  useEffect(() => applyMotion(s.animationsEnabled), [s.animationsEnabled]);
+  useEffect(
+    () => () => applyMotion(settings.animationsEnabled),
+    [settings.animationsEnabled],
+  );
   useEffect(() => {
     api<boolean>("updater_ready")
       .then((available) => {
@@ -185,6 +191,20 @@ export function SettingsView({
           />{" "}
           Minimize launcher while Minecraft runs
         </label>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={s.animationsEnabled}
+            onChange={(e) =>
+              setS({ ...s, animationsEnabled: e.target.checked })
+            }
+          />{" "}
+          Enable interface animations
+        </label>
+        <p className="muted motion-note">
+          Animates navigation, cards, controls and progress. The system Reduce
+          Motion setting always takes priority.
+        </p>
         <label className="check">
           <input
             type="checkbox"

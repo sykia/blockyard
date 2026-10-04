@@ -998,3 +998,103 @@ select option {
   gap: 10px;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
+
+header {
+  cursor: grab;
+  user-select: none;
+}
+header:active {
+  cursor: grabbing;
+}
+header button {
+  cursor: pointer;
+}
+.motion-note {
+  margin: -6px 0 4px 26px;
+  font-size: 12px;
+}
+
+@keyframes surface-enter {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes dialog-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes overlay-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+:root[data-motion="on"] main > .content,
+:root[data-motion="on"] main > .error,
+:root[data-motion="on"] .progress-card {
+  animation: surface-enter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+:root[data-motion="on"] .overlay {
+  animation: overlay-enter 180ms ease-out both;
+}
+:root[data-motion="on"] .modal {
+  animation: dialog-enter 230ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+:root[data-motion="on"] button,
+:root[data-motion="on"] input,
+:root[data-motion="on"] select,
+:root[data-motion="on"] .instance-card,
+:root[data-motion="on"] .catalog-project,
+:root[data-motion="on"] .settings-card,
+:root[data-motion="on"] .instance-icon,
+:root[data-motion="on"] .hero-symbol {
+  transition:
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+:root[data-motion="on"] button:not(:disabled):hover {
+  transform: translateY(-2px);
+}
+:root[data-motion="on"] button:not(:disabled):active {
+  transform: translateY(0) scale(0.985);
+}
+:root[data-motion="on"] input:focus,
+:root[data-motion="on"] select:focus {
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--accent, #b6e18f) 20%, transparent);
+}
+:root[data-motion="on"] .instance-card:hover .instance-icon,
+:root[data-motion="on"] .catalog-project:hover img {
+  transform: scale(1.06);
+}
+:root[data-motion="on"] .hero:hover .hero-symbol {
+  transform: rotate(-9deg) translateY(-4px);
+}
+:root[data-motion="on"] .track > div {
+  transition: width 220ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-motion="on"] *,
+  :root[data-motion="on"] *::before,
+  :root[data-motion="on"] *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

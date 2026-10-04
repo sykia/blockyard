@@ -30,6 +30,7 @@ export type Settings = {
   downloadConcurrency: number;
   showSnapshots: boolean;
   theme: Theme;
+  animationsEnabled: boolean;
   minimizeOnLaunch: boolean;
   width: number;
   height: number;

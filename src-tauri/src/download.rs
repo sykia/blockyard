@@ -9,7 +9,10 @@ use std::{
     },
 };
 use tauri::Emitter;
-use tokio::{fs, io::AsyncWriteExt};
+use tokio::{
+    fs,
+    io::{AsyncReadExt, AsyncWriteExt},
+};
 
 #[derive(Clone)]
 pub struct Job {
@@ -37,10 +40,22 @@ pub async fn valid(path: &Path, hash: Option<&str>, size: Option<u64>) -> bool {
         return false;
     }
     if let Some(expected) = hash {
-        let Ok(data) = fs::read(path).await else {
+        let Ok(mut file) = fs::File::open(path).await else {
             return false;
         };
-        return hex::encode(Sha1::digest(&data)).eq_ignore_ascii_case(expected);
+        let mut digest = Sha1::new();
+        let mut buffer = [0u8; 64 * 1024];
+        loop {
+            let count = match file.read(&mut buffer).await {
+                Ok(count) => count,
+                Err(_) => return false,
+            };
+            if count == 0 {
+                break;
+            }
+            digest.update(&buffer[..count]);
+        }
+        return hex::encode(digest.finalize()).eq_ignore_ascii_case(expected);
     }
     true
 }
@@ -128,6 +143,7 @@ pub async fn fetch_all(
         .filter(|job| seen.insert(job.path.clone()))
         .collect::<Vec<_>>();
     let total = jobs.len();
+    let progress_step = (total / 100).max(1);
     let done = Arc::new(AtomicUsize::new(0));
     let results = stream::iter(jobs.into_iter().map(|job| {
         let client = client.clone();
@@ -155,20 +171,18 @@ pub async fn fetch_all(
                 }
             }
             let n = done.fetch_add(1, Ordering::Relaxed) + 1;
-            let _ = app.emit(
-                "game-status",
-                GameStatus {
-                    instance_id: id,
-                    phase,
-                    progress: if total == 0 {
-                        1.0
-                    } else {
-                        n as f64 / total as f64
+            if n == total || n % progress_step == 0 {
+                let _ = app.emit(
+                    "game-status",
+                    GameStatus {
+                        instance_id: id,
+                        phase,
+                        progress: n as f64 / total as f64,
+                        message: format!("{n} / {total}"),
+                        exit_code: None,
                     },
-                    message: format!("{n} / {total}"),
-                    exit_code: None,
-                },
-            );
+                );
+            }
             if error.is_empty() {
                 Ok(())
             } else {
@@ -198,5 +212,15 @@ mod tests {
         assert!(relative_path("../escape").is_err());
         assert!(relative_path("a/b.jar").is_ok());
         assert!(relative_path("/tmp/x").is_err());
+    }
+    #[tokio::test]
+    async fn cached_file_requires_correct_hash_and_size() {
+        let path = std::env::temp_dir().join(format!("blockyard-hash-{}", uuid::Uuid::new_v4()));
+        fs::write(&path, b"cached asset").await.unwrap();
+        let hash = hex::encode(Sha1::digest(b"cached asset"));
+        assert!(valid(&path, Some(&hash), Some(12)).await);
+        assert!(!valid(&path, Some(&hash), Some(11)).await);
+        assert!(!valid(&path, Some(&"0".repeat(40)), Some(12)).await);
+        fs::remove_file(path).await.unwrap();
     }
 }

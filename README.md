@@ -55,6 +55,10 @@ The app data directory is chosen by Tauri (`app.blockyard.launcher`). It contain
 
 Choose **Dark**, **Light**, or **System** in **Settings → Theme**, then save the launcher settings. The selection is stored with other launcher preferences; System follows the operating system's light/dark preference, including changes while Blockyard is open. Selecting a theme previews it immediately, and leaving Settings without saving restores the saved theme.
 
+**Settings → Enable interface animations** controls page entrances, dialogs, cards, buttons, inputs and progress transitions. The choice previews immediately and is saved with launcher settings; the operating system's Reduce Motion preference takes priority. The app header is a native Tauri drag area, so a floating window follows the pointer using the window manager's normal movement. Window movement effects themselves are controlled by the operating system or compositor, not by the web interface.
+
+File integrity checks stream SHA-1 from disk in fixed-size chunks to avoid loading large JARs into memory. Download progress events are limited for large batches, and live game logs are updated in groups while the Logs screen is open. These changes keep the interface responsive during installs and noisy game sessions.
+
 ## Account setup
 
 **Offline profiles:** Open Accounts → Add offline profile and choose a 3–16 character Minecraft player name. The launcher derives Minecraft's stable offline UUID from that name. Offline profiles need no Microsoft client ID and work for singleplayer and servers that permit offline players. They do not prove Minecraft ownership and cannot join online-mode servers. Changing the name creates a different UUID, so existing worlds may treat it as a different player.
