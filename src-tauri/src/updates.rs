@@ -37,7 +37,7 @@ impl Pending {
 #[cfg(target_os = "linux")]
 fn package_owner(executable: &Path) -> bool {
     executable == Path::new("/usr/bin/blockyard")
-        && Command::new("pacman")
+        && Command::new("/usr/bin/pacman")
             .args(["-Qqo", "/usr/bin/blockyard"])
             .output()
             .ok()
@@ -108,13 +108,7 @@ fn emit(app: &AppHandle, phase: &str, received: u64, total: Option<u64>, message
 }
 #[cfg(target_os = "linux")]
 fn exists(command: &str) -> bool {
-    std::env::var_os("PATH")
-        .and_then(|paths| {
-            std::env::split_paths(&paths)
-                .map(|p| p.join(command))
-                .find(|p| p.is_file())
-        })
-        .is_some()
+    Path::new("/usr/bin").join(command).is_file()
 }
 #[cfg(target_os = "linux")]
 fn terminal() -> Option<(&'static str, &'static [&'static str])> {
@@ -234,11 +228,11 @@ pub async fn install_update(
                 return Err(format!("{manager} is required to update this package"));
             }
             let file = save_verified_package(&app, &checked.update.version, extension, &bytes)?;
-            let mut command = Command::new(terminal);
+            let mut command = Command::new(Path::new("/usr/bin").join(terminal));
             command
                 .args(terminal_args)
-                .arg("sudo")
-                .arg(manager)
+                .arg("/usr/bin/sudo")
+                .arg(Path::new("/usr/bin").join(manager))
                 .args(manager_args)
                 .arg(&file);
             match command.spawn() {
