@@ -143,7 +143,7 @@ function App() {
       <aside className="sidebar">
         <div className="brand">
           <div className="brandmark">
-            <Box size={23} />
+            <img src="/logo.png" alt="" width="36" height="36" />
           </div>
           <span>Blockyard</span>
         </div>
