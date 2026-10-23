@@ -164,6 +164,25 @@ pub async fn finish(
         )
         .await?;
         if let Some(error) = value.get("error").and_then(Value::as_str) {
+            let non_recoverable = matches!(
+                error,
+                "invalid_grant"
+                    | "invalid_client"
+                    | "invalid_request"
+                    | "unauthorized_client"
+                    | "access_denied"
+                    | "unsupported_response_type"
+                    | "unsupported_grant_type"
+            );
+            if non_recoverable {
+                return Err(format!(
+                    "Microsoft sign-in: {}",
+                    value
+                        .get("error_description")
+                        .and_then(Value::as_str)
+                        .unwrap_or(error)
+                ));
+            }
             let delay = if error == "slow_down" {
                 code.interval.max(5) + 5
             } else {

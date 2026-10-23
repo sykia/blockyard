@@ -13,6 +13,8 @@ import {
   ChevronRight,
   Puzzle,
   Compass,
+  Sun,
+  Moon,
 } from "lucide-react";
 import {
   api,
@@ -43,6 +45,7 @@ function App() {
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [create, setCreate] = useState(false),
+    [theme, setTheme] = useState(() => document.documentElement.dataset.theme === "light" ? "light" : "dark"),
     [catalogTarget, setCatalogTarget] = useState<Instance | undefined>(
       undefined,
     );
@@ -98,6 +101,7 @@ function App() {
     if (!db) return;
     const theme = normalizeTheme(db.settings.theme);
     applyTheme(theme);
+    setTheme(document.documentElement.dataset.theme || "dark");
     try {
       localStorage.setItem("blockyard-theme", theme);
     } catch {
@@ -143,11 +147,11 @@ function App() {
       <aside className="sidebar">
         <div className="brand">
           <div className="brandmark">
-            <img src="/logo.png" alt="" width="36" height="36" />
+            <img src="/logo.png" alt="" />
           </div>
           <span>Blockyard</span>
         </div>
-        <nav>
+        <nav aria-label="Main navigation">
           {[
             ["home", "Overview", Box],
             ["instances", "Instances", Puzzle],
@@ -159,6 +163,9 @@ function App() {
             <button
               key={key as string}
               className={page === key ? "active" : ""}
+              title={label as string}
+              aria-label={label as string}
+              aria-current={page === key ? "page" : undefined}
               onClick={() => {
                 if (key === "discover") setCatalogTarget(undefined);
                 setPage(key as string);
@@ -169,14 +176,24 @@ function App() {
             </button>
           ))}
         </nav>
-        <div className="sidebar-foot">
-          <span className="signal" /> Minecraft Java Edition{" "}
-          <small>v0.4.0</small>
+        <div className="sidebar-bottom">
+          <div className="theme-switch" role="group" aria-label="Color theme">
+            {([['light', 'White', Sun], ['dark', 'Black', Moon]] as const).map(([value, label, Icon]) => (
+              <button key={value} aria-label={label + ' theme'} aria-pressed={theme === value}
+                onClick={() => {
+                  setTheme(value);
+                  applyTheme(value);
+                  try { localStorage.setItem("blockyard-theme", value); } catch {}
+                  if (db) void action(() => api("save_settings", { settings: { ...db.settings, theme: value } }));
+                }}>
+                <Icon size={16} /><span>{label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </aside>
       <main>
         <header>
-          <div className="eyebrow">YOUR MINECRAFT SPACE</div>
           <div className="header-row">
             <h1>
               {
@@ -225,11 +242,10 @@ function App() {
           <div className="content">
             <div className="hero">
               <div>
-                <div className="eyebrow">READY WHEN YOU ARE</div>
                 <h2>{current ? current.name : "Create your first instance"}</h2>
                 <p>
                   {current
-                    ? `${current.version} · ${current.loader.kind === "vanilla" ? "Vanilla" : current.loader.kind === "fabric" ? "Fabric" : "NeoForge"}`
+                    ? `${current.version} · ${current.loader.kind === "vanilla" ? "Vanilla" : current.loader.kind.charAt(0).toUpperCase() + current.loader.kind.slice(1)}`
                     : "Keep every world, mod and setting in its own space."}
                 </p>
                 <div className="hero-actions">
@@ -252,9 +268,6 @@ function App() {
                     <ChevronRight size={16} />
                   </button>
                 </div>
-              </div>
-              <div className="hero-symbol">
-                <Box size={100} strokeWidth={1} />
               </div>
             </div>
             {status && (
@@ -285,7 +298,6 @@ function App() {
             <div className="section-head">
               <div>
                 <h3>Your instances</h3>
-                <p>Independent worlds, mods and settings</p>
               </div>
               <button
                 className="textbutton"

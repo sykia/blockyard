@@ -10,6 +10,26 @@ pub fn root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     Ok(dir)
 }
+/// All mutable Minecraft data belongs to this instance, including identical versions.
+pub fn prepare_game_directory(root: &Path, id: &str) -> Result<PathBuf, String> {
+    if !safe_filename(id) {
+        return Err("Invalid instance ID".into());
+    }
+    let game = root.join("instances").join(id).join("game");
+    for folder in [
+        "mods",
+        "config",
+        "saves",
+        "resourcepacks",
+        "shaderpacks",
+        "screenshots",
+        "logs",
+        "crash-reports",
+    ] {
+        fs::create_dir_all(game.join(folder)).map_err(|e| e.to_string())?;
+    }
+    Ok(game)
+}
 pub fn load(root: &Path) -> Result<Database, String> {
     let path = root.join("state.json");
     #[cfg(windows)]
@@ -85,16 +105,49 @@ pub fn save(root: &Path, db: &Database) -> Result<(), String> {
     fs::rename(tmp, path).map_err(|e| e.to_string())
 }
 pub fn safe_filename(name: &str) -> bool {
+    let reserved = [
+        "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8",
+        "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+    ];
+    let stem = name.split('.').next().unwrap_or(name);
     !name.is_empty()
         && !name.contains(['/', '\\', '\0'])
         && name != "."
         && name != ".."
         && !name.starts_with('.')
+        && !reserved.iter().any(|r| r.eq_ignore_ascii_case(stem))
 }
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::model::{Instance, Loader};
+    #[test]
+    fn game_data_is_private_and_preserved() {
+        let root =
+            std::env::temp_dir().join(format!("blockyard-isolation-{}", uuid::Uuid::new_v4()));
+        let first = prepare_game_directory(&root, "first").unwrap();
+        let second = prepare_game_directory(&root, "second").unwrap();
+        for file in [
+            "options.txt",
+            "mods/example.jar",
+            "config/example.toml",
+            "saves/world/level.dat",
+        ] {
+            let path = first.join(file);
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::write(&path, b"first instance").unwrap();
+            assert!(!second.join(file).exists());
+        }
+        prepare_game_directory(&root, "first").unwrap();
+        assert_eq!(
+            fs::read(first.join("options.txt")).unwrap(),
+            b"first instance"
+        );
+        assert!(second.join("mods").is_dir());
+        assert!(second.join("config").is_dir());
+        assert!(prepare_game_directory(&root, "../outside").is_err());
+        fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn paths() {
         assert!(!safe_filename("../x"));

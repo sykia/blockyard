@@ -1,14 +1,22 @@
 # Blockyard
 
-<img src="docs/brand/logo.png" width="64" height="64" alt="Blockyard icon" />
+<img src="docs/brand/logo.png" width="64" height="64" alt="Blockyard logo" />
 
 Blockyard is a Tauri 2 desktop launcher for Minecraft Java Edition. It keeps game directories independent while sharing downloaded game files, libraries, assets and Java runtimes.
 
 ## Screenshots
 
-Screenshots use a separate sample offline profile. No personal account data is included.
+Screenshots show the current interface with sample offline profiles. No personal account data is included.
 
-![Launcher overview with Vanilla and Fabric instances](docs/screenshots/overview.png)
+### Black theme
+
+![Compact launcher overview in black theme](docs/screenshots/overview.png)
+
+### White theme
+
+![Compact launcher overview in white theme](docs/screenshots/overview-light.png)
+
+### Instance and launcher preferences
 
 ![Instance settings](docs/screenshots/instances.png)
 
@@ -21,7 +29,7 @@ Screenshots use a separate sample offline profile. No personal account data is i
 Download the installers from the [latest GitHub release](https://github.com/sykia/blockyard/releases/latest).
 
 - **Windows:** run the `-setup.exe` NSIS installer. The installer is currently unsigned, so Windows may ask you to confirm it.
-- **Arch Linux:** download `blockyard-0.4.1-1-x86_64.pkg.tar.zst`, then install it with `sudo pacman -U ./blockyard-0.4.1-1-x86_64.pkg.tar.zst`. The package adds a desktop launcher and declares its WebKitGTK runtime dependencies. This is a release package for `pacman -U`; it is not in the official Arch repositories.
+- **Arch Linux:** download `blockyard-0.5.0-1-x86_64.pkg.tar.zst`, then install it with `sudo pacman -U ./blockyard-0.5.0-1-x86_64.pkg.tar.zst`. The package adds a desktop launcher and declares its WebKitGTK runtime dependencies. This is a release package for `pacman -U`; it is not in the official Arch repositories.
 - **Other Linux:** use the AppImage, or install the DEB with `sudo apt install ./*.deb` or the RPM with `sudo dnf install ./*.rpm`, as appropriate for your distribution. Make the AppImage executable with `chmod +x ./*.AppImage` before running it.
 
 The GitHub Actions workflow builds Windows, AppImage, DEB, RPM and Arch packages for each version tag. Update artifacts are signed with a Tauri updater key; `latest.json` contains the signed update feed. Windows installers are not Authenticode signed, so Windows may still show an Unknown Publisher warning. Release assets include SHA-256 checksums.
@@ -55,7 +63,9 @@ On Hyprland, Blockyard asks the compositor to float and center its main window a
 
 The app data directory is chosen by Tauri (`app.blockyard.launcher`). It contains `state.json`, `instances/<id>/game`, a shared `libraries` directory, `assets`, `cache`, and managed `runtimes`. The operating system keyring stores Microsoft refresh and Minecraft access tokens. Do not copy an instance's `game` directory while Minecraft is running.
 
-Choose **Dark**, **Light**, or **System** in **Settings → Theme**, then save the launcher settings. The selection is stored with other launcher preferences; System follows the operating system's light/dark preference, including changes while Blockyard is open. Selecting a theme previews it immediately, and leaving Settings without saving restores the saved theme.
+Each instance has independent Minecraft settings (`options.txt`), mods, mod configuration, worlds, resource packs, shader packs and screenshots, even when two instances use the same Minecraft version. Their folders are created when an instance or modpack is added, and missing folders are restored on launch or with **Open folder** without overwriting existing files. Minecraft writes its settings on first use. Use a separate instance for each version or mod setup.
+
+Use **White / Black** at the bottom of the sidebar to switch themes and save the choice immediately. The same two themes are available in **Settings → Theme**; click **Save settings** to keep a selection made there.
 
 **Settings → Enable interface animations** controls page entrances, dialogs, cards, buttons, inputs and progress transitions. The choice previews immediately and is saved with launcher settings; the operating system's Reduce Motion preference takes priority. Use the operating system's title bar to move the window; the app header no longer starts window dragging.
 

@@ -46,6 +46,7 @@ export function CreateModal({
             onChange={(e) => setName(e.target.value)}
             placeholder="My survival world"
             autoFocus
+            maxLength={80}
           />
         </label>
         <label>
@@ -91,7 +92,7 @@ export function CreateModal({
           <button
             className="primary"
             disabled={
-              !name.trim() || !version || (kind !== "vanilla" && !loader)
+              !name.trim() || name.trim().length > 80 || !version || (kind !== "vanilla" && !loader)
             }
             onClick={() =>
               onCreate(

@@ -166,7 +166,8 @@ export function CatalogView({
               ],
               FORBID_ATTR: ["style"],
             },
-          ).replace(/(src|href)="\/\//g, '$1="https://')
+          )
+          .replace(/(src|href)=["']\/\//g, '$1="https://')
         : "",
     [detail],
   );
@@ -253,7 +254,7 @@ export function CatalogView({
                 .filter((i) => i.loader.kind !== "vanilla")
                 .map((i) => (
                   <option key={i.id} value={i.id}>
-                    {i.name} · {i.version} · {i.loader.kind}
+                    {i.name} · {i.version} · {i.loader.kind.charAt(0).toUpperCase() + i.loader.kind.slice(1)}
                   </option>
                 ))}
             </select>

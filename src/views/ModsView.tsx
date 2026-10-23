@@ -46,7 +46,7 @@ export function ModsView({
                 filters: [{ name: "Java mods", extensions: ["jar"] }],
               });
               if (selected)
-                await api("add_mod", { id: instance.id, source: selected });
+                await api("add_mod", { id: instance.id, source: selected[0] });
             })
           }
         >

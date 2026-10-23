@@ -40,7 +40,7 @@ export function InstanceDetail({
           <div className="eyebrow">INSTANCE</div>
           <h2>{instance.name}</h2>
           <p>
-            {instance.version} · {instance.loader.kind}
+            {instance.version} · {instance.loader.kind.charAt(0).toUpperCase() + instance.loader.kind.slice(1)}
           </p>
         </div>
         <button className="primary" disabled={busy} onClick={onPlay}>
@@ -58,6 +58,9 @@ export function InstanceDetail({
           <FolderOpen size={17} /> Open folder
         </button>
       </div>
+      <p className="muted">
+        This instance has its own mods, settings, worlds, resource packs and screenshots.
+      </p>
       <div className="form-grid">
         <label>
           Name
@@ -111,6 +114,7 @@ export function InstanceDetail({
           Width
           <input
             type="number"
+            min={320}
             value={edit.width}
             onChange={(e) => setEdit({ ...edit, width: +e.target.value })}
           />
@@ -119,6 +123,7 @@ export function InstanceDetail({
           Height
           <input
             type="number"
+            min={240}
             value={edit.height}
             onChange={(e) => setEdit({ ...edit, height: +e.target.value })}
           />

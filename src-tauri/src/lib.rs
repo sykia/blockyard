@@ -30,10 +30,8 @@ fn client() -> Result<reqwest::Client, String> {
 }
 #[tauri::command]
 async fn snapshot(state: tauri::State<'_, State>) -> Result<Database, String> {
-    let mut db = state.db.lock().await;
-    let snapshot = db.clone();
-    db.warnings.clear();
-    Ok(snapshot)
+    let db = state.db.lock().await;
+    Ok(db.clone())
 }
 #[tauri::command]
 async fn versions(state: tauri::State<'_, State>) -> Result<Vec<VersionChoice>, String> {
@@ -109,8 +107,7 @@ async fn create_instance(
         last_played: None,
         playtime_seconds: 0,
     };
-    std::fs::create_dir_all(state.root.join("instances").join(&id).join("game"))
-        .map_err(|e| e.to_string())?;
+    store::prepare_game_directory(&state.root, &id)?;
     db.instances.push(instance.clone());
     store::save(&state.root, &db)?;
     Ok(instance)
@@ -130,7 +127,7 @@ async fn save_instance(state: tauri::State<'_, State>, instance: Instance) -> Re
         .iter_mut()
         .find(|i| i.id == instance.id)
         .ok_or("Instance not found")?;
-    *old = instance;
+    *old = instance.clone();
     store::save(&state.root, &db)
 }
 #[tauri::command]
@@ -144,9 +141,11 @@ async fn delete_instance(state: tauri::State<'_, State>, id: String) -> Result<(
         .iter()
         .position(|i| i.id == id)
         .ok_or("Instance not found")?;
-    std::fs::remove_dir_all(state.root.join("instances").join(&id)).map_err(|e| e.to_string())?;
-    db.instances.remove(index);
-    store::save(&state.root, &db)
+    let removed = db.instances.remove(index);
+    store::save(&state.root, &db)?;
+    std::fs::remove_dir_all(state.root.join("instances").join(&removed.id))
+        .map_err(|e| e.to_string())?;
+    Ok(())
 }
 #[tauri::command]
 async fn save_settings(state: tauri::State<'_, State>, settings: Settings) -> Result<(), String> {
@@ -158,7 +157,7 @@ async fn save_settings(state: tauri::State<'_, State>, settings: Settings) -> Re
         return Err("Invalid settings".into());
     }
     let mut db = state.db.lock().await;
-    db.settings = settings;
+    db.settings = settings.clone();
     store::save(&state.root, &db)
 }
 #[tauri::command]
@@ -480,11 +479,7 @@ async fn instance_directory(state: tauri::State<'_, State>, id: String) -> Resul
     if !db.instances.iter().any(|i| i.id == id) {
         return Err("Instance not found".into());
     }
-    Ok(state
-        .root
-        .join("instances")
-        .join(id)
-        .join("game")
+    Ok(store::prepare_game_directory(&state.root, &id)?
         .to_string_lossy()
         .to_string())
 }

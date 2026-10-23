@@ -27,12 +27,7 @@ export function SettingsView({
     setS(settings);
   }, [settings]);
   useEffect(() => applyTheme(s.theme), [s.theme]);
-  useEffect(() => () => applyTheme(settings.theme), [settings.theme]);
   useEffect(() => applyMotion(s.animationsEnabled), [s.animationsEnabled]);
-  useEffect(
-    () => () => applyMotion(settings.animationsEnabled),
-    [settings.animationsEnabled],
-  );
   useEffect(() => {
     api<boolean>("updater_ready")
       .then((available) => {
@@ -153,9 +148,8 @@ export function SettingsView({
               value={s.theme}
               onChange={(e) => setS({ ...s, theme: e.target.value as Theme })}
             >
-              <option value="dark">Dark</option>
-              <option value="light">Light</option>
-              <option value="system">System</option>
+              <option value="dark">Black</option>
+              <option value="light">White</option>
             </select>
           </label>
           <label>

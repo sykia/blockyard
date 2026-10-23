@@ -21,16 +21,10 @@ export function AccountsView({
       setCode(c);
       setWaiting(true);
       await openUrl(c.verificationUri);
-      api("finish_login", { code: c })
-        .then(() => {
-          setCode(null);
-          setWaiting(false);
-          refresh();
-        })
-        .catch((e) => {
-          setWaiting(false);
-          alert(String(e));
-        });
+      await api("finish_login", { code: c });
+      setCode(null);
+      setWaiting(false);
+      await refresh();
     });
   return (
     <div className="content narrow">

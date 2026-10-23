@@ -181,10 +181,7 @@ fn native_job(root: &Path, lib: &Library) -> Result<Option<Job>, String> {
         .and_then(|d| d.classifiers.as_ref())
         .and_then(|c| c.get(&classifier))
     else {
-        return Err(format!(
-            "Native classifier {classifier} missing for {}",
-            lib.name
-        ));
+        return Ok(None);
     };
     Ok(Some(Job {
         url: artifact.url.clone(),
@@ -339,10 +336,7 @@ pub async fn run(
     minimize_on_launch: bool,
 ) -> Result<u64, String> {
     let id = &instance.id;
-    let game_dir = root.join("instances").join(id).join("game");
-    fs::create_dir_all(&game_dir)
-        .await
-        .map_err(|e| e.to_string())?;
+    let game_dir = crate::store::prepare_game_directory(&root, id)?;
     emit(
         &app,
         id,
@@ -693,7 +687,10 @@ pub async fn run(
         None,
     );
     let started = std::time::Instant::now();
-    let status = child.wait().await.map_err(|e| e.to_string())?;
+    let status = tokio::time::timeout(std::time::Duration::from_secs(7 * 24 * 3600), child.wait())
+        .await
+        .map_err(|_| "Minecraft process timed out".to_string())?
+        .map_err(|e| e.to_string())?;
     for task in tasks {
         let _ = task.await;
     }

@@ -682,8 +682,7 @@ pub async fn install_pack(
     }
     let id = uuid::Uuid::new_v4().to_string();
     let folder = root.join("instances").join(&id);
-    let game = folder.join("game");
-    std::fs::create_dir_all(&game).map_err(|e| e.to_string())?;
+    let game = crate::store::prepare_game_directory(root, &id)?;
     archive_job.path = folder.join(format!("pack{extension}"));
     let result = async {
         fetch_retry(client, &archive_job, cf.as_ref()).await?;
