@@ -1,6 +1,6 @@
 # Blockyard 0.4.1
 
-A new Minecraft-inspired application icon: a voxel grass block with a diamond pickaxe.
+Updated application branding using the supplied dark cube B logo with a transparent background.
 
 - Updated the application, installer, taskbar, launcher sidebar and browser icons.
 - Included the full-resolution transparent PNG source and desktop icon formats.
