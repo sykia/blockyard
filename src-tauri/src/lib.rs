@@ -12,7 +12,7 @@ mod offline;
 mod store;
 mod updates;
 use model::{Account, AccountKind, Database, Instance, Loader, ModFile, Settings, VersionChoice};
-use std::{path::PathBuf, sync::Arc};
+use std::{future::Future, path::PathBuf, sync::Arc};
 use tauri::{Emitter, Manager};
 use tokio::sync::Mutex;
 struct State {
@@ -530,6 +530,31 @@ async fn catalog_releases(
     drop(db);
     catalog::releases(&state.client, provider, &project, instance.as_ref()).await
 }
+
+async fn run_catalog_task<T, F, Fut>(name: &'static str, task: F) -> Result<T, String>
+where
+    T: Send + 'static,
+    F: FnOnce() -> Fut + Send + 'static,
+    Fut: Future<Output = Result<T, String>> + 'static,
+{
+    let (send, receive) = tokio::sync::oneshot::channel();
+    std::thread::Builder::new()
+        .name(name.into())
+        .stack_size(16 * 1024 * 1024)
+        .spawn(move || {
+            let result = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .map_err(|error| format!("Cannot start catalog worker: {error}"))
+                .and_then(|runtime| runtime.block_on(task()));
+            let _ = send.send(result);
+        })
+        .map_err(|error| format!("Cannot start catalog worker: {error}"))?;
+    receive
+        .await
+        .map_err(|_| "Catalog worker stopped unexpectedly".to_owned())?
+}
+
 #[tauri::command]
 async fn catalog_install_mod(
     state: tauri::State<'_, State>,
@@ -546,14 +571,11 @@ async fn catalog_install_mod(
         .cloned()
         .ok_or("Instance not found")?;
     drop(db);
-    catalog::install_mod(
-        &state.client,
-        &state.root,
-        &instance,
-        provider,
-        &project,
-        &release,
-    )
+    let client = state.client.clone();
+    let root = state.root.clone();
+    run_catalog_task("catalog-mod-install", move || async move {
+        catalog::install_mod(&client, &root, &instance, provider, &project, &release).await
+    })
     .await
 }
 #[tauri::command]
@@ -564,14 +586,11 @@ async fn catalog_install_pack(
     release: String,
 ) -> Result<Instance, String> {
     let settings = state.db.lock().await.settings.clone();
-    let instance = catalog::install_pack(
-        &state.client,
-        &state.root,
-        &settings,
-        provider,
-        &project,
-        &release,
-    )
+    let client = state.client.clone();
+    let root = state.root.clone();
+    let instance = run_catalog_task("catalog-pack-install", move || async move {
+        catalog::install_pack(&client, &root, &settings, provider, &project, &release).await
+    })
     .await?;
     let mut db = state.db.lock().await;
     db.instances.push(instance.clone());
