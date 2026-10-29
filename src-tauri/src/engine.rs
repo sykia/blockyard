@@ -607,6 +607,8 @@ pub async fn run(
         return Err("Unresolved launch argument in version metadata".into());
     }
     let mut command = tokio::process::Command::new(java);
+    #[cfg(windows)]
+    command.creation_flags(0x08000000);
     command
         .arg(format!("-Xmx{}M", instance.ram_mb))
         .args(split_user_args(&instance.jvm_args)?)

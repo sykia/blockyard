@@ -29,7 +29,7 @@ Screenshots show the current interface with sample offline profiles. No personal
 Download the installers from the [latest GitHub release](https://github.com/sykia/blockyard/releases/latest).
 
 - **Windows:** run the `-setup.exe` NSIS installer. The installer is currently unsigned, so Windows may ask you to confirm it.
-- **Arch Linux:** download `blockyard-0.5.1-1-x86_64.pkg.tar.zst`, then install it with `sudo pacman -U ./blockyard-0.5.1-1-x86_64.pkg.tar.zst`. The package adds a desktop launcher and declares its WebKitGTK runtime dependencies. This is a release package for `pacman -U`; it is not in the official Arch repositories.
+- **Arch Linux:** download `blockyard-0.5.2-1-x86_64.pkg.tar.zst`, then install it with `sudo pacman -U ./blockyard-0.5.2-1-x86_64.pkg.tar.zst`. The package adds a desktop launcher and declares its WebKitGTK runtime dependencies. This is a release package for `pacman -U`; it is not in the official Arch repositories.
 - **Other Linux:** use the AppImage, or install the DEB with `sudo apt install ./*.deb` or the RPM with `sudo dnf install ./*.rpm`, as appropriate for your distribution. Make the AppImage executable with `chmod +x ./*.AppImage` before running it.
 
 The GitHub Actions workflow builds Windows, AppImage, DEB, RPM and Arch packages for each version tag. Update artifacts are signed with a Tauri updater key; `latest.json` contains the signed update feed. Windows installers are not Authenticode signed, so Windows may still show an Unknown Publisher warning. Release assets include SHA-256 checksums.
