@@ -1,3 +1,39 @@
+<!-- project-presentation -->
+<p align="center"><img src="docs/brand/logo.png" alt="Blockyard" width="88"></p>
+<h1 align="center">Blockyard</h1>
+<p align="center">Minecraft Java Edition — отдельное место для каждой сборки.</p>
+<p align="center"><a href="https://github.com/sykia/blockyard/releases/latest"><img src="https://img.shields.io/github/v/release/sykia/blockyard?style=flat-square&amp;color=397d54" alt="Последний релиз"></a> <strong>Tauri 2 · Rust · React · TypeScript</strong></p>
+<p align="center"><a href="https://github.com/sykia/blockyard/releases/latest"><img src="docs/presentation/action.svg" alt="Скачать Blockyard" width="280" height="60"></a></p>
+
+Лаунчер с независимыми игровыми папками и общим кэшем файлов Minecraft, библиотек, ресурсов и Java.
+
+## Одна сборка — один мир настроек
+
+| Сборки | Каталоги | Интерфейс |
+| :--- | :--- | :--- |
+| Vanilla, Fabric и NeoForge | Поиск модов и сборок в Modrinth и CurseForge | Светлая и тёмная темы |
+| Раздельные миры, моды и настройки | Установка модпака как нового экземпляра | Прогресс установки и игровые логи |
+
+## Как выглядит
+
+<p align="center"><img src="docs/screenshots/overview.png" alt="Реальный интерфейс Blockyard в тёмной теме" width="860"></p>
+<details><summary>Светлая тема, сборки и настройки</summary>
+
+<p align="center"><img src="docs/screenshots/overview-light.png" alt="Blockyard в светлой теме" width="860"></p><p align="center"><img src="docs/screenshots/instances.png" alt="Настройки экземпляра Minecraft" width="860"></p><p align="center"><img src="docs/screenshots/settings.png" alt="Настройки лаунчера" width="860"></p>
+</details>
+
+## Начать
+
+1. Откройте [последний релиз](https://github.com/sykia/blockyard/releases/latest) и выберите пакет для своей системы.
+2. Добавьте профиль и создайте экземпляр Minecraft с нужной версией и загрузчиком.
+3. Установите игру или модпак и запускайте его из лаунчера.
+
+Для Microsoft-входа нужен собственный client ID; CurseForge требует свой API key. Подробности, ограничения offline-профилей и команды сборки сохранены ниже. Blockyard — сторонний проект, не официальный продукт Mojang или Microsoft.
+
+
+<details>
+<summary><strong>Полная документация, установка и технические подробности</strong></summary>
+
 # Blockyard
 
 <img src="docs/brand/logo.png" width="64" height="64" alt="Blockyard logo" />
@@ -122,3 +158,9 @@ Restart Blockyard after Linux installation. The **Restart** button is available 
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+</details>
+
+---
+
+[sykia](https://github.com/sykia) · [TG Mod](https://github.com/sykia/tdesktop) · [Blockyard](https://github.com/sykia/blockyard) · [SoundCloud Desktop](https://github.com/sykia/soundcloud-desktop) · [Umbrella Shell](https://github.com/sykia/umbrella-shell)
